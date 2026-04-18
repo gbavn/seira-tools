@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="pt">
+<head>
+  <title>Seira Tools — Simulador Local</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="https://2img.net/i.imgur.com/94eajnv.png">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CSS VARIABLES — Tema dark do Seira RPG
+       Ajuste aqui caso os valores reais do fórum difiram
+  ══════════════════════════════════════════════════════════════ -->
+  <style>
+    :root {
+      --dark:    #0a0e14;
+      --dark1:   #131820;
+      --dark2:   #1c2330;
+      --dark3:   #252f3e;
+      --accent1: #40BDA8;
+      --accent2: #2d8a78;
+      --white:   #dde3ed;
+      --font1:   'Poppins', sans-serif;
+      --glow-intensity: 0.35;
+    }
+
+    /* Alpine: esconde elementos com x-cloak até a inicialização */
+    [x-cloak] { display: none !important; }
+
+    /* Badge visual de identificação do ambiente local */
+    #sim-badge {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      background: #f8d030;
+      color: #111;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: monospace;
+      padding: 4px 10px;
+      border-radius: 4px;
+      z-index: 99999;
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+  <!-- Icon Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <link rel="stylesheet" href="https://dl.dropboxusercontent.com/scl/fi/7u8yas6hw80bbctszduuk/game-icons2.css?rlkey=y4gexn0fxpvkquorbx2juia2w&st=pznz55p8&dl=0">
+
+  <!-- CSS base do fórum (carregado direto do Forumeiros) -->
+  <link rel="stylesheet" href="https://seira.forumeiros.com/42-ltr.css">
+
+  <!-- jQuery (necessário para scripts do shell) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+  <!-- ──────────────────────────────────────────────────────────────
+       INJECT.JS — carrega ../index.html e injeta no .teste
+       Deve vir ANTES do Alpine (Alpine é carregado por inject.js)
+  ────────────────────────────────────────────────────────────── -->
+  <script src="inject.js"></script>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       ESTILOS INLINE DO FÓRUM (copiados do template original)
+  ══════════════════════════════════════════════════════════════ -->
+  <style>
+    #page-footer, div.navbar, div.navbar ul.linklist { display: block !important; }
+    ul.linklist li.rightside, ul.linklist li.rightside a.copyright { display: inline !important; }
+    #fa_toolbar, #fa_toolbar_hidden { display: none !important; }
+
+    body { margin: 0; padding: 0 !important; }
+
+    /* ── Logo ──────────────────────────────────────────────────── */
+    .name-forum .logo-top-text {
+      display: flex; align-items: center; justify-content: center;
+      gap: 9px; font-family: 'Cinzel', serif; font-size: 13px;
+      font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
+      color: #fff; margin-bottom: -15px;
+      text-shadow: 0 0 15px rgba(255,255,255,var(--glow-intensity)),
+                   0 0 30px rgba(255,255,255,calc(var(--glow-intensity) * 0.5));
+    }
+    .name-forum .logo-top-text img {
+      width: 40px; height: 40px;
+      filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,calc(var(--glow-intensity) * 1.3)));
+    }
+    .name-forum .logo-top-text, .name-forum b, .name-forum .logo-bottom-text {
+      position: relative; z-index: 1;
+    }
+    .name-forum b {
+      font-family: 'Cinzel', serif; /* fallback — fórum usa fonte "Against" */
+      font-size: 90px; font-weight: 300; color: #fff;
+      line-height: 1; letter-spacing: 3px; display: block; margin: 5px 0;
+      text-shadow: 0 0 30px rgba(255,255,255,calc(var(--glow-intensity) * 1.6)),
+                   0 0 60px rgba(255,255,255,var(--glow-intensity)),
+                   0 0 90px rgba(255,255,255,calc(var(--glow-intensity) * 0.5));
+    }
+    .name-forum .logo-bottom-text {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; font-family: 'Cinzel', serif; font-size: 12px;
+      font-weight: 500; letter-spacing: 5px; text-transform: uppercase;
+      color: #fff; white-space: nowrap;
+      text-shadow: 0 0 15px rgba(255,255,255,var(--glow-intensity)),
+                   0 0 30px rgba(255,255,255,calc(var(--glow-intensity) * 0.5));
+    }
+    .name-forum .logo-bottom-text img {
+      width: 14px; height: 14px; flex-shrink: 0;
+      filter: brightness(0) invert(1) drop-shadow(0 0 6px rgba(255,255,255,calc(var(--glow-intensity) * 1.3)));
+    }
+    .name-forum::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px; height: 180px;
+      background: radial-gradient(ellipse,
+        rgba(255,255,255,calc(var(--glow-intensity) * 0.5)) 0%,
+        rgba(255,255,255,calc(var(--glow-intensity) * 0.26)) 40%,
+        transparent 70%);
+      filter: blur(80px); z-index: 0; pointer-events: none;
+    }
+
+    /* ── Switcheroo button ─────────────────────────────────────── */
+    .switcheroo-toggle {
+      width: 50px; height: 50px; background: var(--dark1);
+      border: 1px solid var(--dark2); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: .3s; color: var(--accent1); font-size: 20px;
+    }
+    .switcheroo-toggle:hover { background: var(--accent1); color: var(--white); transform: scale(1.05); }
+
+    /* ── Theme toggle ──────────────────────────────────────────── */
+    .theme-toggle {
+      width: 50px; height: 50px; background: var(--dark1);
+      border: 1px solid var(--dark2); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: .3s; color: var(--accent1);
+      font-size: 20px; margin-top: 10px;
+    }
+    .theme-toggle:hover { background: var(--accent1); color: var(--white); transform: scale(1.05); }
+
+    /* ── Overrides de layout ───────────────────────────────────── */
+    #left .d012b4 {
+      background-color: #; color: #d9d9d9;
+      margin-bottom: 4px; overflow: hidden; padding: 0;
+    }
+    #left .d012b4 span.corners-bottom, #left .d012b4 span.corners-top { margin: 0; }
+    #main .d012b4 {
+      color: #d9d9d9; margin-bottom: 4px; overflow: hidden; padding: 0 10px;
+    }
+    #main .d012b4 span.corners-bottom, #main .d012b4 span.corners-top { margin: 0 -10px; }
+    div.f26acea43 { padding: 0 !important; margin-bottom: 10px !important; }
+  </style>
+
+  <!-- Sticky nav script (do fórum) -->
+  <script>
+    $(function() {
+      $(window).on('scroll', function() {
+        var scrollTop = $(this).scrollTop()
+        var $navbar = $('.mynavbar')
+        if (scrollTop > 0) $navbar.addClass('sticky-nav')
+        else $navbar.removeClass('sticky-nav')
+      })
+    })
+  </script>
+</head>
+
+<body id="modernbb">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       NAV BAR
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="mynavbar">
+    <div class="navbar-left">
+      <i class="gmi gmi-pokecog"></i>
+      <a href="https://seira.forumeiros.com/" class="gradient-text">Seira</a>
+    </div>
+    <div class="navbar-right">
+      <li><a class="mainmenu" href="https://seira.forumeiros.com/">Início</a></li>
+      <li><a class="mainmenu" href="https://seira.forumeiros.com/memberlist">Membros</a></li>
+      <li><a class="mainmenu" href="https://seira.forumeiros.com/privmsg?folder=inbox">Mensagens privadas</a></li>
+      <li><a class="mainmenu" href="https://seira.forumeiros.com/discover">Atividade</a></li>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PAGE HEADER
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="page-header">
+    <div class="page-header-left">
+      <div class="nav-us">
+        <img src="https://sig.grumpybumpers.com/host/avanalloy2.gif"
+             alt="Avan Alloy" style="max-width:300px;max-height:500px">
+      </div>
+      <div class="switcheroo-toggle">
+        <i class="fa-solid fa-right-left"></i>
+      </div>
+      <div class="nav-name">
+        <div class="user-name"><b>Bem-vindo,</b> <us>Avan Alloy</us></div>
+      </div>
+      <div class="nav-tablon tabs">
+        <li class="tab" onclick="showTab(1)"><i class="fa-solid fa-chevron-left"></i></li>
+        <li class="tab" onclick="showTab(2)"><i class="fa-solid fa-chevron-right"></i></li>
+      </div>
+    </div>
+
+    <div class="page-header-right">
+      <!-- Tab 1 — Ambientação -->
+      <div id="tab-content-1" class="tab-content active">
+        <div class="tab-inside-one">
+          <div class="clima">
+            <div class="icon-clima"><i class="gmi gmi-flower-twirl"></i></div>
+            <div class="info-clima">
+              <b>Estação</b>
+              <h5>Primavera</h5>
+              Primavera com 22°C e brisa leve ao entardecer.
+            </div>
+          </div>
+          <div class="ambientacion">
+            Em Seira, falhas na Rede Helix causam anomalias e ameaçam a região.
+            Enquanto o Conselho da Liga convoca treinadores para investigar, o grupo
+            secreto Codice busca dominar a rede, usando energia de Pokémon e buracos
+            de energia artificiais para controlar o futuro da região.
+          </div>
+          <div id="name-forum" class="name-forum"></div>
+        </div>
+      </div>
+
+      <!-- Tab 2 — Staff / Recentes -->
+      <div id="tab-content-2" class="tab-content">
+        <div class="tab-inside-two">
+          <div class="staff">
+            <div class="staffmember"><h5>Avan <b>Administrador</b></h5></div>
+            <div class="staffmember"><h5>Freya <b>Administrador</b></h5></div>
+            <div class="staffmember"><h5>Mathito <b>Administrador</b></h5></div>
+            <div class="staffmember"><h5>Nick <b>Moderador</b></h5></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       WRAPPER PRINCIPAL (estrutura idêntica ao Forumeiros)
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="conteneur_minwidth_IE modern-resp">
+    <div class="conteneur_layout_IE">
+      <div class="conteneur_container_IE">
+        <div id="wrap">
+          <div id="page-body">
+            <div id="content-container">
+              <div id="outer-wrapper">
+                <div id="wrapper">
+
+                  <!-- ── SIDEBAR ESQUERDA ──────────────────────── -->
+                  <div id="left">
+
+                    <div class="linksforum fo1">
+                      <a href="https://seira.forumeiros.com/t150-guia-de-iniciacao" title="Guia de Iniciação"><em class="gmi gmi-school-bag"></em></a>
+                      <a href="https://seira.forumeiros.com/t614-regras-do-forum" title="Regras do Forum"><em class="gmi gmi-book-cover"></em></a>
+                      <a href="https://seira.forumeiros.com/t53-progressao" title="Progressão"><em class="gmi gmi-trophy"></em></a>
+                      <a href="https://seira.forumeiros.com/t55-regras-gerais" title="Regras Gerais"><em class="gmi gmi-house"></em></a>
+                      <a href="https://seira.forumeiros.com/t56-sistemas-secundarios" title="Sistemas Secundários"><em class="gmi gmi-gear-hammer"></em></a>
+                      <a href="https://seira.forumeiros.com/h11-pericias" title="Perícias"><em class="gmi gmi-jigsaw-piece"></em></a>
+                      <a href="#" title="Sub-Classes"><em class="gmi gmi-dna1"></em></a>
+                      <a href="https://discord.gg/tfNwfeSapH" title="Discord"><em style="font-size:25px" class="fa-brands fa-discord"></em></a>
+                    </div>
+
+                    <div class="linksforum fo2">
+                      <a href="https://seira.forumeiros.com/t124-ambientacao" title="Ambientação"><em class="gmi gmi-sun-cloud"></em></a>
+                      <a href="https://seira.forumeiros.com/h19-biblioteca" title="Biblioteca"><em class="gmi gmi-bookshelf"></em></a>
+                      <a href="https://seira.forumeiros.com/t153-lista-npc-s-importantes" title="NPC's Importantes"><em class="gmi gmi-three-friends"></em></a>
+                      <a href="https://seira.forumeiros.com/t62-modelo-de-ficha" title="Modelo de Ficha"><em class="gmi gmi-pencil"></em></a>
+                      <a href="https://seira.forumeiros.com/t100-registro-de-photoplayer" title="Registro de Photoplayer"><em class="gmi gmi-portrait"></em></a>
+                      <a href="https://seira.forumeiros.com/h1-regiao-de-seira" title="Cidades de Seira"><em class="gmi gmi-modern-city"></em></a>
+                      <a href="https://seira.forumeiros.com/h21-lideres-e-elite" title="Líderes de Ginásio e Elite 4"><em class="gmi gmi-drama-masks"></em></a>
+                      <a href="#" title="??"><em class="gmi gmi-dial-padlock"></em></a>
+                    </div>
+
+                    <div style="height:1px"></div>
+
+                    <div class="mnovedades">
+                      <div class="news">
+                        <em class="fa-solid fa-calendar-week"></em>
+                        <p><strong><a href="https://seira.forumeiros.com/t380-novidade-seira-1-5">Novidades Seira 1.5</a></strong>
+                        Confira as novidades fresquinhas do Update!</p>
+                      </div>
+                      <div class="news">
+                        <em class="fa-solid fa-calendar-week"></em>
+                        <p><strong><a href="https://seira.forumeiros.com/t519-boletim-sazonal-primavera-2026">Boletim Sazonal de Primavera</a></strong>
+                        Os campos floresceram e a primavera chegou!</p>
+                      </div>
+                      <div class="news">
+                        <em class="fa-solid fa-calendar-week"></em>
+                        <p><strong><a href="https://seira.forumeiros.com/t528-evento-festival-das-flores">Festival das Flores</a></strong>
+                        Celebre a estação mais colorida do ano!</p>
+                      </div>
+                    </div>
+
+                    <div style="height:1px"></div>
+
+                    <div class="mbusquedas">
+                      <a href="https://seira.forumeiros.com/t74-s-a-v-sistema-de-avaliacoes">
+                        <em class="fa-solid fa-clipboard-check"></em> Avaliações
+                      </a>
+                      <a href="https://seira.forumeiros.com/t73-solicitacoes-a-administracao">
+                        <em class="fa-solid fa-envelope-open-text"></em> Solicitações à Administração
+                      </a>
+                      <a href="https://seira.forumeiros.com/h6-calculadora-unificada">
+                        <em class="fa-solid fa-calculator"></em> Calculadora
+                      </a>
+                      <a href="https://seira.forumeiros.com/t76-estacao-de-viagens">
+                        <em class="fa-solid fa-train"></em> Estação de Viagem
+                      </a>
+                      <a href="https://seira.forumeiros.com/h2-seiradex">
+                        <em class="fa-solid fa-database"></em> SeiraDex
+                      </a>
+                      <a href="https://seira.forumeiros.com/h11-pericias">
+                        <em class="fa-solid fa-puzzle-piece"></em> Perícias
+                      </a>
+                      <a href="https://seira.forumeiros.com/h4-gerador-de-template">
+                        <em class="fa-solid fa-code"></em> Gerador de Template
+                      </a>
+                      <a href="https://seira.forumeiros.com/h8-editor-mochila">
+                        <em class="fa-solid fa-box"></em> Editor de Mochila
+                      </a>
+                    </div>
+
+                    <div style="height:1px"></div>
+
+                    <div class="module">
+                      <div class="h3"><i class="ion-chatbubble-working"></i>Últimos assuntos</div>
+                      <div class="mod-recent-row">
+                        <p style="padding:10px;font-size:11px;opacity:.5">
+                          (simulador local — dados não carregados)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style="height:1px"></div>
+
+                    <div class="afisbros">
+                      <a href="#"><img src="https://placehold.co/80x90/000000/FFFFFF.png"></a>
+                      <a href="#"><img src="https://placehold.co/80x90/000000/FFFFFF.png"></a>
+                    </div>
+
+                    <div class="afiselite">
+                      <a href="https://talesofdemigods.forumeiros.com/">
+                        <img src="https://2img.net/i.imgur.com/6mPqtBV.gif">
+                      </a>
+                    </div>
+
+                    <div style="height:1px"></div>
+
+                  </div><!-- /#left -->
+
+                  <!-- ── CONTEÚDO PRINCIPAL ────────────────────── -->
+                  <div id="container">
+                    <div id="content-main">
+                      <div id="main">
+                        <div id="main-content">
+
+                          <!--
+                            PONTO DE INJEÇÃO — inject.js carrega ../index.html
+                            e injeta o conteúdo aqui, exatamente como o Forumeiros
+                            faz com "Usar início do fórum"
+                          -->
+                          <div class="teste"></div>
+
+                        </div><!-- /#main-content -->
+                      </div><!-- /#main -->
+                    </div><!-- /#content-main -->
+                  </div><!-- /#container -->
+
+                  <div id="emptyidright"></div>
+
+                </div><!-- /#wrapper -->
+              </div><!-- /#outer-wrapper -->
+            </div><!-- /#content-container -->
+          </div><!-- /#page-body -->
+        </div><!-- /#wrap -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="statistics"></div>
+  <div id="page-footer">
+    <div class="wrap">
+      <ul class="footerbar-system">
+        <li><a class="icon-home" href="https://seira.forumeiros.com/"><i class="ion-ios-home"></i></a></li>
+        <li>
+          <a href="https://www.forumeiros.com/criar-um-forum" target="_blank">Criar um fórum</a>
+          &nbsp;|&nbsp;
+          <a href="https://ajuda.forumeiros.com/" target="_blank">Fórum gratuito de ajuda</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Badge de ambiente local -->
+  <div id="sim-badge">⚙ LOCAL DEV</div>
+
+</body>
+</html>

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seira Tools</title>
+
+  <!-- ── Fontes e ícones ── -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- ── CSS do projeto (hospedado no fórum) ── -->
+  <link rel="stylesheet" href="./seira-tools-base.css">
+  <link rel="stylesheet" href="./forum.css">
+
+  <!-- ── CSS local desta página ── -->
+  <style>
+    [x-cloak] { display: none !important; }
+
+    /* ── Seletor de tipo ── */
+    .st-type-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+    .st-type-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 6px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; background: var(--cell-bg); color: var(--white1); font-family: var(--font1); font-size: 11px; gap: 5px; transition: all 0.15s; }
+    .st-type-btn img { width: 26px; height: 26px; object-fit: contain; }
+    .st-type-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+    .st-type-btn.selected { border-color: #fff; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); color: var(--white); }
+
+    /* ── Cards de resultado ── */
+    .st-result-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-top: 4px; }
+    .st-result-card { border-radius: 8px; padding: 12px 14px; font-size: 13px; }
+    .st-result-card.level-up  { background: rgba(45,106,64,0.2);  border: 1px solid #3a8c53; }
+    .st-result-card.no-change { background: rgba(30,58,138,0.2);  border: 1px solid #3b5cc4; }
+    .st-result-name   { font-weight: 600; color: var(--white); margin-bottom: 4px; }
+    .st-result-detail { color: var(--white1); font-size: 12px; }
+    .st-result-exp    { color: #7dd99a; font-weight: 600; }
+    .st-result-exp.neutral { color: #93c5fd; }
+
+    /* ── Cards de Pokémon do time ── */
+    .st-pokemon-card { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 16px; }
+    .st-pokemon-card-name { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 12px; }
+    .st-bonus-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+    /* ── Slots do ginásio ── */
+    .st-gym-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+    .st-gym-slot { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+    .st-gym-preview { width: 100%; height: 80px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .st-gym-preview img { max-width: 74px; max-height: 74px; object-fit: contain; }
+    .st-gym-preview span { color: var(--dark3); font-size: 11px; }
+
+    /* ── Expansões da propriedade ── */
+    .st-exp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .st-exp-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--dark2); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; cursor: pointer; transition: all 0.12s; font-size: 12px; color: var(--white2); }
+    .st-exp-item:hover { border-color: var(--accent1); color: var(--white1); }
+    .st-exp-item.selected { border-color: var(--accent1); background: rgba(69,123,162,0.15); color: var(--white1); }
+    .st-exp-item.selected i { color: var(--accent1); }
+    .st-exp-item.disabled { opacity: 0.3; pointer-events: none; }
+    .st-exp-item i { width: 16px; text-align: center; color: var(--dark3); font-size: 13px; flex-shrink: 0; }
+
+    /* ── Tags de move ── */
+    .st-move-tags { display: flex; gap: 5px; margin-top: 4px; }
+    .st-move-tag { padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: var(--dark2); color: var(--white2); font-size: 10px; cursor: pointer; font-family: var(--font1); transition: all 0.12s; }
+    .st-move-tag.active { background: var(--accent1); border-color: var(--accent1); color: var(--white); }
+
+    /* ── Itens da mochila ── */
+    .st-bag-items { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .st-bag-item { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+    .st-bag-item img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+    .st-bag-item-info { flex: 1; }
+    .st-bag-item-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .st-bag-item-qty  { font-size: 11px; color: var(--white2); margin-top: 2px; }
+    .st-bag-item-actions { display: flex; gap: 4px; flex-direction: column; }
+    .st-bag-item-actions button { padding: 5px 9px; font-size: 11px; margin: 0; }
+
+    /* ── Meses da propriedade ── */
+    .st-months-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+    .st-month-item { display: flex; flex-direction: column; gap: 5px; }
+    .st-month-item label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--white2); }
+    .st-month-item select { font-size: 11px; padding: 6px 24px 6px 9px; }
+
+    /* ── Mode switches ── */
+    .st-mode-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .st-mode-btn { padding: 7px 14px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.08); background: var(--dark2); color: var(--white1); font-size: 12px; font-family: var(--font1); cursor: pointer; transition: all 0.12s; }
+    .st-mode-btn.active { background: rgba(69,123,162,0.2); border-color: var(--accent1); color: var(--accent1); }
+    .st-mode-btn:hover:not(.active) { border-color: rgba(255,255,255,0.2); color: var(--white); }
+
+    /* ── Custo da propriedade ── */
+    .st-cost-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
+    .st-cost-card { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px; text-align: center; }
+    .st-cost-card small { display: block; font-size: 10px; color: var(--dark3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    .st-cost-card strong { font-size: 14px; color: var(--accent1); font-weight: 600; }
+
+    /* ── Type display ── */
+    .st-type-display { text-align: center; padding: 7px; border-radius: 6px; background: var(--cell-bg); font-size: 12px; color: var(--white2); margin-bottom: 14px; }
+    .st-type-display.selected { color: var(--white1); }
+
+    @media (max-width: 768px) {
+      .st-type-grid   { grid-template-columns: repeat(4,1fr); }
+      .st-gym-grid    { grid-template-columns: repeat(2,1fr); }
+      .st-exp-grid    { grid-template-columns: repeat(2,1fr); }
+      .st-months-grid { grid-template-columns: repeat(2,1fr); }
+      .st-result-grid { grid-template-columns: 1fr; }
+      .st-bag-items   { grid-template-columns: 1fr; }
+      .st-cost-row    { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="st-wrap">
+
+  <h1><i class="fas fa-wrench"></i> Seira Tools</h1>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAVEGAÇÃO PRINCIPAL
+  ════════════════════════════════════════════════════════ -->
+  <div x-data="toolNav" x-cloak>
+
+    <nav class="st-nav">
+      <!-- Calculadoras -->
+      <div class="st-nav-group" @mouseenter="open('calc')" @mouseleave="close('calc')">
+        <div class="st-nav-btn" :class="{active:groupActive(['calc-rp','calc-batalha','calc-personagem']),open:isOpen('calc')}">
+          <i class="fas fa-calculator"></i> Calculadoras <span class="st-arr">▾</span>
+        </div>
+        <div class="st-submenu" :class="{open:isOpen('calc')}">
+          <div class="st-submenu-label">Calculadoras</div>
+          <div class="st-submenu-item" :class="{active:isActive('calc-rp')}" @click="select('calc-rp')">
+            <span class="st-si-icon"><i class="fas fa-book-open"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Calculadora de RP</div><div class="st-si-desc">Experiência de roleplay</div></div>
+          </div>
+          <div class="st-submenu-item" :class="{active:isActive('calc-batalha')}" @click="select('calc-batalha')">
+            <span class="st-si-icon"><i class="fas fa-swords"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Calculadora de Batalha</div><div class="st-si-desc">Experiência de combate</div></div>
+          </div>
+          <div class="st-submenu-item" :class="{active:isActive('calc-personagem')}" @click="select('calc-personagem')">
+            <span class="st-si-icon"><i class="fas fa-user"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Calculadora de Personagem</div><div class="st-si-desc">Progressão do treinador</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-nav-sep"></div>
+
+      <!-- Geradores -->
+      <div class="st-nav-group" @mouseenter="open('gen')" @mouseleave="close('gen')">
+        <div class="st-nav-btn" :class="{active:groupActive(['gen-pokemon','gen-propriedade','gen-lider','gen-ginasio']),open:isOpen('gen')}">
+          <i class="fas fa-wand-magic-sparkles"></i> Geradores <span class="st-arr">▾</span>
+        </div>
+        <div class="st-submenu" :class="{open:isOpen('gen')}">
+          <div class="st-submenu-label">Geradores</div>
+          <div class="st-submenu-item" :class="{active:isActive('gen-pokemon')}" @click="select('gen-pokemon')">
+            <span class="st-si-icon"><i class="fas fa-dragon"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Gerador de Pokémon</div><div class="st-si-desc">Ficha completa</div></div>
+          </div>
+          <div class="st-submenu-item" :class="{active:isActive('gen-propriedade')}" @click="select('gen-propriedade')">
+            <span class="st-si-icon"><i class="fas fa-house-chimney"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Gerador de Propriedades</div><div class="st-si-desc">Terreno e expansões</div></div>
+          </div>
+          <div class="st-submenu-item" :class="{active:isActive('gen-lider')}" @click="select('gen-lider')">
+            <span class="st-si-icon"><i class="fas fa-id-card"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Gerador de Líder</div><div class="st-si-desc">Ficha do líder de ginásio</div></div>
+          </div>
+          <div class="st-submenu-item disabled">
+            <span class="st-si-icon"><i class="fas fa-person"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Gerador de NPC</div><div class="st-si-desc">Em desenvolvimento</div></div>
+            <span class="st-si-badge">breve</span>
+          </div>
+          <div class="st-submenu-item" :class="{active:isActive('gen-ginasio')}" @click="select('gen-ginasio')">
+            <span class="st-si-icon"><i class="fas fa-building"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Gerador de Ginásio</div><div class="st-si-desc">Arena, palco e banco</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-nav-sep"></div>
+
+      <!-- Editores -->
+      <div class="st-nav-group" @mouseenter="open('edit')" @mouseleave="close('edit')">
+        <div class="st-nav-btn" :class="{active:groupActive(['edit-mochila']),open:isOpen('edit')}">
+          <i class="fas fa-pen-to-square"></i> Editores <span class="st-arr">▾</span>
+        </div>
+        <div class="st-submenu" :class="{open:isOpen('edit')}">
+          <div class="st-submenu-label">Editores</div>
+          <div class="st-submenu-item" :class="{active:isActive('edit-mochila')}" @click="select('edit-mochila')">
+            <span class="st-si-icon"><i class="fas fa-backpack"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Editor de Mochila</div><div class="st-si-desc">Itens e dinheiro</div></div>
+          </div>
+          <div class="st-submenu-item disabled">
+            <span class="st-si-icon"><i class="fas fa-user-pen"></i></span>
+            <div class="st-si-text"><div class="st-si-name">Editor de NPC</div><div class="st-si-desc">Em desenvolvimento</div></div>
+            <span class="st-si-badge">breve</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Alertas de carregamento -->
+    <div x-show="$store.api.loading" class="st-alert info show" style="margin-bottom:14px">
+      <i class="fas fa-spinner fa-spin"></i> Carregando dados...
+    </div>
+    <div x-show="$store.api.error" class="st-alert error show" style="margin-bottom:14px" x-text="$store.api.error"></div>
+
+    <!-- ════════════════════════════════════════════════════
+         CALCULADORA DE RP
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('calc-rp')" x-data="calcRP()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-book-open"></i> Calculadora de Roleplay</h2>
+        <div class="st-grid">
+          <div class="st-group">
+            <label><i class="fas fa-user"></i> Nível do Treinador</label>
+            <input type="number" x-model="nivelTreinador" min="1" max="25" @change="syncTeam()">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-users"></i> Pokémon no Time</label>
+            <input type="number" x-model="qtParticipantes" min="1" max="6" @change="syncTeam()">
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-paw"></i> Time</h2>
+        <div class="st-grid">
+          <template x-for="(slot, idx) in team" :key="idx">
+            <div class="st-pokemon-card">
+              <div class="st-pokemon-card-name" x-text="`Pokémon ${idx+1}`"></div>
+              <div class="st-grid-3" style="gap:8px;margin-bottom:8px">
+                <div class="st-group"><label>Nome</label><input type="text" x-model="slot.nome"></div>
+                <div class="st-group"><label>Nível</label><input type="number" x-model="slot.nivel" min="1" max="100"></div>
+                <div class="st-group"><label>EXP Atual</label><input type="number" x-model="slot.expAtual" min="0"></div>
+              </div>
+              <div class="st-bonus-row">
+                <div class="st-switch-wrap" style="flex:1">
+                  <span><i class="fas fa-paw"></i> Domador</span>
+                  <label class="st-switch"><input type="checkbox" x-model="slot.domador"><span class="st-slider"></span></label>
+                </div>
+              </div>
+              <div class="st-grid" style="gap:8px;margin-top:8px">
+                <div class="st-group"><label>Evento (mult.)</label><input type="number" x-model="slot.evento" min="1" step="0.1"></div>
+                <div class="st-group"><label>Valor Fixo</label><input type="number" x-model="slot.fixo" min="0"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="st-btn-row" style="margin-top:14px">
+          <button @click="calcular()"><i class="fas fa-calculator"></i> Calcular</button>
+        </div>
+      </div>
+
+      <div class="st-section" x-show="results.length">
+        <h2><i class="fas fa-chart-line"></i> Resultado</h2>
+        <div class="st-result-grid">
+          <template x-for="r in results" :key="r.nome">
+            <div class="st-result-card" :class="r.subiu ? 'level-up' : 'no-change'">
+              <div class="st-result-name" x-text="r.nome"></div>
+              <div class="st-result-detail">
+                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`+${r.ganhou} EXP`"></span>
+                &nbsp;→&nbsp;
+                <span x-text="`Nv. ${r.nivel} (${r.expAtual}/${r.expMax})`"></span>
+                <template x-if="r.subiu"><span style="color:#7dd99a;font-weight:600;display:block;margin-top:2px">⬆ Subiu de nível!</span></template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         CALCULADORA DE BATALHA
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('calc-batalha')" x-data="calcBatalha()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-swords"></i> Calculadora de Batalha</h2>
+        <div class="st-grid-3" style="gap:14px;margin-bottom:14px">
+          <div class="st-group">
+            <label><i class="fas fa-layer-group"></i> Geração do Inimigo</label>
+            <select x-model="gen" @change="onGenChange()">
+              <option value="">Selecione...</option>
+              <template x-for="g in [1,2,3,4,5,6,7,8,9]" :key="g">
+                <option :value="g" x-text="`Gen ${g}`"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-dragon"></i> Pokémon Inimigo</label>
+            <div class="st-ac-wrap">
+              <input type="text" x-model="enemy.query" @input="enemy.search(gen)" :disabled="!gen" :placeholder="gen ? 'Buscar...' : 'Selecione a geração'">
+              <div class="st-ac-list" :class="{open:enemy.showList}">
+                <template x-for="p in enemy.suggestions" :key="p.id">
+                  <div class="st-ac-item" @click="enemy.select(p)">
+                    <img :src="p.artwork" :alt="p.name">
+                    <span x-text="p.name"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-chart-line"></i> Nível do Inimigo</label>
+            <input type="number" x-model="enemyLevel" min="1" max="100">
+          </div>
+        </div>
+        <div class="st-grid-3" style="gap:14px">
+          <div class="st-group">
+            <label><i class="fas fa-user"></i> Nível do Personagem</label>
+            <input type="number" x-model="nivelPersonagem" min="1" max="25">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-users"></i> Pokémon no Time</label>
+            <input type="number" x-model="qtParticipantes" min="1" max="6" @change="syncTeam()">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-fire"></i> Tipo de Confronto</label>
+            <select x-model="tipoConfronto">
+              <option value="1">Batalha Selvagem (1×)</option>
+              <option value="1.5">Batalha de Treinador (1.5×)</option>
+              <option value="1.8">Líder de Ginásio (1.8×)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-paw"></i> Time</h2>
+        <div class="st-grid">
+          <template x-for="(slot, idx) in team" :key="idx">
+            <div class="st-pokemon-card">
+              <div class="st-pokemon-card-name" x-text="`Pokémon ${idx+1}`"></div>
+              <div class="st-grid-3" style="gap:8px;margin-bottom:8px">
+                <div class="st-group"><label>Nome</label><input type="text" x-model="slot.nome"></div>
+                <div class="st-group"><label>Nível</label><input type="number" x-model="slot.nivel" min="1" max="100"></div>
+                <div class="st-group"><label>EXP Atual</label><input type="number" x-model="slot.expAtual" min="0"></div>
+              </div>
+              <div class="st-bonus-row">
+                <div class="st-switch-wrap" style="flex:1">
+                  <span><i class="fas fa-egg"></i> Lucky Egg</span>
+                  <label class="st-switch"><input type="checkbox" x-model="slot.luckyEgg"><span class="st-slider"></span></label>
+                </div>
+                <div class="st-switch-wrap" style="flex:1">
+                  <span><i class="fas fa-paw"></i> Domador</span>
+                  <label class="st-switch"><input type="checkbox" x-model="slot.domador"><span class="st-slider"></span></label>
+                </div>
+              </div>
+              <div class="st-grid" style="gap:8px;margin-top:8px">
+                <div class="st-group"><label>Evento (mult.)</label><input type="number" x-model="slot.evento" min="1" step="0.1"></div>
+                <div class="st-group"><label>Valor Fixo</label><input type="number" x-model="slot.fixo" min="0"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="st-btn-row" style="margin-top:14px">
+          <button @click="calcular()"><i class="fas fa-calculator"></i> Calcular</button>
+        </div>
+      </div>
+
+      <div class="st-section" x-show="results.length">
+        <h2><i class="fas fa-chart-line"></i> Resultado</h2>
+        <div class="st-result-grid">
+          <template x-for="r in results" :key="r.nome">
+            <div class="st-result-card" :class="r.subiu ? 'level-up' : 'no-change'">
+              <div class="st-result-name" x-text="r.nome"></div>
+              <div class="st-result-detail">
+                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`+${r.ganhou} EXP`"></span>
+                &nbsp;→&nbsp;
+                <span x-text="`Nv. ${r.nivel} (${r.expAtual}/${r.expMax})`"></span>
+                <template x-if="r.subiu"><span style="color:#7dd99a;font-weight:600;display:block;margin-top:2px">⬆ Subiu de nível!</span></template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         CALCULADORA DE PERSONAGEM
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('calc-personagem')" x-data="calcPersonagem()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-user"></i> Calculadora de Personagem</h2>
+        <div class="st-grid-3">
+          <div class="st-group">
+            <label><i class="fas fa-layer-group"></i> Nível Atual</label>
+            <input type="number" x-model="nivel" min="1" max="25">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-star"></i> EXP Atual no Nível</label>
+            <input type="number" x-model="expAtual" min="0">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-plus"></i> Bônus de EXP</label>
+            <input type="number" x-model="bonus" min="0">
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--white2);margin-top:10px">
+          Cada postagem válida gera <strong style="color:var(--white1)">3 EXP base</strong>. Use o campo de bônus para eventos ou perícias.
+        </p>
+        <div class="st-btn-row" style="margin-top:14px">
+          <button @click="calcular()"><i class="fas fa-calculator"></i> Calcular</button>
+        </div>
+      </div>
+
+      <div class="st-section" x-show="result">
+        <h2><i class="fas fa-chart-line"></i> Resultado</h2>
+        <div class="st-result-grid" style="grid-template-columns:1fr">
+          <div class="st-result-card" :class="result?.subiu ? 'level-up' : 'no-change'">
+            <div class="st-result-name" x-text="result?.subiu ? `Subiu para o Nível ${result?.novoNivel}!` : `Nível ${result?.novoNivel}`"></div>
+            <div class="st-result-detail">
+              <span :class="result?.subiu ? 'st-result-exp' : 'st-result-exp neutral'" x-text="`+${result?.ganhou} EXP`"></span>
+              &nbsp;→&nbsp;
+              <span x-text="`${result?.expNoNivel} / ${result?.expMax}`"></span>
+              <span x-show="result?.expMax === 0" style="color:var(--white2)"> (nível máximo)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         GERADOR DE POKÉMON
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('gen-pokemon')" x-data="genPokemon()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-toggle-on"></i> Modo</h2>
+        <div class="st-mode-row">
+          <div class="st-mode-btn" :class="{active:modo==='normal'}"   @click="setModo('normal')"><i class="fas fa-circle"></i> Normal</div>
+          <div class="st-mode-btn" :class="{active:modo==='starter'}"  @click="setModo('starter')"><i class="fas fa-star"></i> Inicial</div>
+          <div class="st-mode-btn" :class="{active:modo==='ovo'}"      @click="setModo('ovo')"><i class="fas fa-egg"></i> Ovo</div>
+          <div class="st-mode-btn" :class="{active:modo==='selvagem'}" @click="setModo('selvagem')"><i class="fas fa-leaf"></i> Selvagem</div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-dragon"></i> Dados do Pokémon</h2>
+        <div class="st-grid-auto" style="margin-bottom:14px">
+          <div class="st-group">
+            <label><i class="fas fa-layer-group"></i> Geração</label>
+            <select x-model="gen" @change="onGenChange()">
+              <option value="">Selecione...</option>
+              <template x-for="g in [1,2,3,4,5,6,7,8,9]" :key="g">
+                <option :value="g" x-text="`Gen ${g} `+['(Kanto)','(Johto)','(Hoenn)','(Sinnoh)','(Unova)','(Kalos)','(Alola)','(Galar)','(Paldea)'][g-1]"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-dragon"></i> Espécie</label>
+            <div class="st-ac-wrap">
+              <input type="text" x-model="species.query" @input="species.search(gen)" :disabled="!gen" :placeholder="gen ? 'Buscar...' : 'Selecione a geração'">
+              <div class="st-ac-list" :class="{open:species.showList}">
+                <template x-for="p in species.suggestions" :key="p.id">
+                  <div class="st-ac-item" @click="onSpeciesSelect(p)"><img :src="p.artwork" :alt="p.name"><span x-text="p.name"></span></div>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-tag"></i> Apelido</label>
+            <input type="text" x-model="apelido" placeholder="Deixe vazio para usar a espécie">
+          </div>
+          <div class="st-group" x-show="species.forms.length">
+            <label><i class="fas fa-shapes"></i> Forma Regional</label>
+            <select @change="species.formSelected = species.forms.find(f => f.id === +$event.target.value) || null">
+              <option value="">Forma Padrão</option>
+              <template x-for="f in species.forms" :key="f.id">
+                <option :value="f.id" x-text="f.name"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group" x-show="genderOptions.length">
+            <label><i class="fas fa-venus-mars"></i> Gênero</label>
+            <select x-model="gender">
+              <template x-for="g in genderOptions" :key="g.value">
+                <option :value="g.value" x-text="g.label"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group" x-show="abilityOptions.length">
+            <label><i class="fas fa-star"></i> Habilidade</label>
+            <select x-model="ability">
+              <template x-for="a in abilityOptions" :key="a.value">
+                <option :value="a.value" x-text="a.label"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-circle"></i> Pokébola</label>
+            <select x-model="pokeball">
+              <template x-for="b in pokeballs" :key="b.id">
+                <option :value="b.id" x-text="b.name"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-chart-line"></i> Nível</label>
+            <input type="number" x-model="nivel" min="1" max="100" :disabled="modo==='starter'||modo==='ovo'">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-bolt"></i> EXP Atual</label>
+            <input type="number" x-model="expAtual" min="0" :max="expMax" :disabled="modo==='starter'||modo==='ovo'">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-heart"></i> Felicidade</label>
+            <input type="number" x-model="felicidade" min="0" max="255" :disabled="modo==='starter'||modo==='ovo'">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-gem"></i> Item Equipado</label>
+            <input type="text" x-model="item" :disabled="modo==='starter'||modo==='ovo'" placeholder="Nada">
+          </div>
+          <div class="st-group">
+            <label><i class="fas fa-user"></i> OT</label>
+            <input type="text" x-model="ot" :disabled="modo==='ovo'" placeholder="Nome do treinador">
+          </div>
+          <div class="st-group st-span2">
+            <label><i class="fas fa-comment-dots"></i> Particularidades</label>
+            <textarea x-model="particularidades" placeholder="Descreva características especiais..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-fire"></i> Movimentos</h2>
+        <div class="st-grid">
+          <template x-for="(slot, idx) in moves" :key="idx">
+            <div class="st-group">
+              <label x-text="`Movimento ${idx+1}`"></label>
+              <div class="st-ac-wrap">
+                <input type="text" x-model="slot.query" @input="slot.search()" placeholder="Buscar movimento...">
+                <div class="st-ac-list" :class="{open:slot.showList}">
+                  <template x-for="m in slot.suggestions" :key="m.id">
+                    <div class="st-ac-item" @click="slot.select(m)"><span x-text="m.name"></span><small x-text="m.type"></small></div>
+                  </template>
+                </div>
+              </div>
+              <div class="st-move-tags">
+                <span class="st-move-tag" :class="{active:slot.tag==='normal'}" @click="slot.tag='normal'">Normal</span>
+                <span class="st-move-tag" :class="{active:slot.tag==='tm'}"     @click="slot.tag='tm'">TM</span>
+                <span class="st-move-tag" :class="{active:slot.tag==='em'}"     @click="slot.tag='em'">EM</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-chart-bar"></i> Status Treinados</h2>
+        <div class="st-grid-3">
+          <div class="st-group"><label>HP</label><input type="number" x-model="stats.hp" min="0" max="140"></div>
+          <div class="st-group"><label>Ataque</label><input type="number" x-model="stats.atq" min="0" max="140"></div>
+          <div class="st-group"><label>Defesa</label><input type="number" x-model="stats.def" min="0" max="140"></div>
+          <div class="st-group"><label>Atq. Especial</label><input type="number" x-model="stats.atqesp" min="0" max="140"></div>
+          <div class="st-group"><label>Def. Especial</label><input type="number" x-model="stats.defesp" min="0" max="140"></div>
+          <div class="st-group"><label>Velocidade</label><input type="number" x-model="stats.vel" min="0" max="140"></div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-code"></i> Código Gerado</h2>
+        <div class="st-btn-row">
+          <button @click="gerar()"><i class="fas fa-wand-magic-sparkles"></i> Gerar Código</button>
+          <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+        </div>
+        <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         GERADOR DE PROPRIEDADE
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('gen-propriedade')" x-data="genPropriedade()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-house-chimney"></i> Dados da Propriedade</h2>
+        <div class="st-grid">
+          <div class="st-group"><label><i class="fas fa-heading"></i> Nome da Propriedade</label><input type="text" x-model="nome" placeholder="Ex: Chalé das Alturas"></div>
+          <div class="st-group"><label><i class="fas fa-location-dot"></i> Endereço</label><input type="text" x-model="endereco" placeholder="Ex: Rota 3, próximo a Veldhavn"></div>
+          <div class="st-group"><label><i class="fas fa-user"></i> Proprietário</label><input type="text" x-model="dono" placeholder="Nome do personagem"></div>
+          <div class="st-group"><label><i class="fas fa-calendar"></i> Data de Compra</label><input type="text" x-model="data" placeholder="Ex: Janeiro, Ano 1"></div>
+          <div class="st-group"><label><i class="fas fa-image"></i> Imagem de Capa (URL)</label><input type="text" x-model="capa" placeholder="https://..."></div>
+          <div class="st-group"><label><i class="fas fa-circle-user"></i> Avatar do Dono (URL)</label><input type="text" x-model="avatar" placeholder="https://..."></div>
+          <div class="st-group st-span2"><label><i class="fas fa-align-left"></i> Descrição</label><textarea x-model="descricao" placeholder="Descreva a propriedade..."></textarea></div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-map"></i> Classe e Tipo</h2>
+        <div class="st-grid">
+          <div class="st-group">
+            <label><i class="fas fa-ranking-star"></i> Classe do Terreno</label>
+            <select x-model="classe" @change="onClasseChange()">
+              <option value="">Selecione...</option>
+              <template x-for="c in ['D','C','B','A','S']" :key="c">
+                <option :value="c" x-text="`Classe ${c}`"></option>
+              </template>
+            </select>
+          </div>
+          <div class="st-group" x-show="classe">
+            <label><i class="fas fa-building"></i> Tipo de Construção</label>
+            <select x-model="construcaoId" @change="onConstrucaoChange()">
+              <option value="">Selecione...</option>
+              <template x-for="c in construcoesDisponiveis" :key="c.id">
+                <option :value="c.id" x-text="c.nome"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <div class="st-cost-row" x-show="construcaoAtual">
+          <div class="st-cost-card"><small>Terreno</small><strong x-text="`₽ ${custoTerreno.toLocaleString('pt-BR')}`"></strong></div>
+          <div class="st-cost-card"><small>Construção</small><strong x-text="`₽ ${custoConstrucao.toLocaleString('pt-BR')}`"></strong></div>
+          <div class="st-cost-card"><small>Expansões</small><strong x-text="`₽ ${custoExpansoes.toLocaleString('pt-BR')}`"></strong></div>
+          <div class="st-cost-card"><small>Total</small><strong x-text="`₽ ${total.toLocaleString('pt-BR')}`"></strong></div>
+        </div>
+      </div>
+
+      <div class="st-section" x-show="construcaoAtual">
+        <h2><i class="fas fa-puzzle-piece"></i> Expansões &nbsp;<span style="color:var(--accent1);font-size:12px" x-text="`${selecionadas.size} / ${limite} slots`"></span></h2>
+        <h3><i class="fas fa-wrench"></i> Simples</h3>
+        <div class="st-exp-grid">
+          <template x-for="exp in expansoes.simples" :key="exp.id">
+            <div class="st-exp-item" :class="{selected:isSel(exp.id),disabled:isDisabled(exp.id)}" @click="toggleExp(exp.id)">
+              <i class="fas" :class="exp.icon"></i> <span x-text="exp.nome"></span>
+            </div>
+          </template>
+        </div>
+        <template x-if="temComplexas">
+          <div>
+            <h3 style="margin-top:14px"><i class="fas fa-cog"></i> Complexas</h3>
+            <div class="st-exp-grid">
+              <template x-for="exp in expansoes.complexa" :key="exp.id">
+                <div class="st-exp-item" :class="{selected:isSel(exp.id),disabled:isDisabled(exp.id)}" @click="toggleExp(exp.id)">
+                  <i class="fas" :class="exp.icon"></i> <span x-text="exp.nome"></span>
+                </div>
+              </template>
+            </div>
+            <h3 style="margin-top:14px"><i class="fas fa-circle"></i> Monumentais</h3>
+            <div class="st-exp-grid">
+              <template x-for="exp in expansoes.monumental" :key="exp.id">
+                <div class="st-exp-item" :class="{selected:isSel(exp.id),disabled:isDisabled(exp.id)}" @click="toggleExp(exp.id)">
+                  <i class="fas" :class="exp.icon"></i> <span x-text="exp.nome"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="st-section" x-show="construcaoAtual">
+        <h2><i class="fas fa-calendar-check"></i> Taxa de Manutenção &nbsp;<span style="color:var(--accent1);font-size:12px" x-text="`₽ ${taxa.toLocaleString('pt-BR')} / mês`"></span></h2>
+        <div class="st-months-grid">
+          <template x-for="(mes, i) in mesesNomes" :key="i">
+            <div class="st-month-item">
+              <label x-text="mes"></label>
+              <select x-model="meses[i]">
+                <option value="pe">⏳ Pendente</option>
+                <option value="pp">✅ Pago</option>
+                <option value="pa">⚠️ Atrasado</option>
+              </select>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-code"></i> Código Gerado</h2>
+        <div class="st-btn-row">
+          <button @click="gerar()"><i class="fas fa-wand-magic-sparkles"></i> Gerar HTML</button>
+          <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+          <button class="st-btn-danger" @click="limpar()"><i class="fas fa-rotate-left"></i> Limpar</button>
+        </div>
+        <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         GERADOR DE LÍDER
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('gen-lider')" x-data="genLider()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-user"></i> Dados do Personagem</h2>
+        <div class="st-grid">
+          <div class="st-group"><label><i class="fas fa-user"></i> Nome e Sobrenome</label><input type="text" x-model="nome" placeholder="Nome do Líder"></div>
+          <div class="st-group"><label><i class="fas fa-calendar"></i> Idade</label><input type="number" x-model="idade" min="14" max="100"></div>
+          <div class="st-group"><label><i class="fas fa-briefcase"></i> Ocupação</label><input type="text" x-model="ocupacao"></div>
+          <div class="st-group"><label><i class="fas fa-map-marker-alt"></i> Origem</label><input type="text" x-model="origem" placeholder="Cidade de origem"></div>
+          <div class="st-group"><label><i class="fas fa-star"></i> Photoplayer</label><input type="text" x-model="photoplayer" placeholder="Nome da pessoa pública"></div>
+          <div class="st-group"><label><i class="fas fa-image"></i> Foto (URL)</label><input type="text" x-model="foto" placeholder="https://..."></div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-gem"></i> Tipo do Ginásio</h2>
+        <div class="st-type-grid">
+          <template x-for="t in types" :key="t">
+            <div class="st-type-btn" :class="{selected:tipoSelecionado===t}" @click="selectType(t)">
+              <img :src="typeIcons[t]" :alt="t">
+              <span x-text="typePT[t]"></span>
+            </div>
+          </template>
+        </div>
+        <div class="st-type-display" :class="{selected:tipoSelecionado}" x-text="tipoSelecionado ? `Tipo selecionado: ${tipoNome}` : 'Nenhum tipo selecionado'"></div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-trophy"></i> Perícias (Selecione até 4)</h2>
+        <div class="st-grid">
+          <template x-for="(p, i) in pericias" :key="i">
+            <div class="st-group">
+              <label x-text="`Perícia ${i+1}`"></label>
+              <select @change="pericias[i] = { id: $event.target.options[$event.target.selectedIndex].dataset.id || '', nome: $event.target.options[$event.target.selectedIndex].text }" :value="p.id">
+                <option value="">Selecione...</option>
+                <template x-for="pk in periciaOptions" :key="pk.perk_id || pk.id">
+                  <option :value="pk.perk_id || pk.id" :data-id="pk.perk_id || pk.id" x-text="pk.nome"></option>
+                </template>
+              </select>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-align-left"></i> Descrição</h2>
+        <div class="st-group" style="margin-bottom:14px">
+          <label>Resumo</label>
+          <textarea x-model="resumo" placeholder="Breve descrição do personagem..."></textarea>
+        </div>
+        <div class="st-group">
+          <label>História Completa</label>
+          <textarea x-model="historia" style="min-height:160px" placeholder="História do personagem..."></textarea>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-code"></i> Código Gerado</h2>
+        <div class="st-btn-row">
+          <button @click="gerar()"><i class="fas fa-wand-magic-sparkles"></i> Gerar Código</button>
+          <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+        </div>
+        <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         GERADOR DE GINÁSIO
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('gen-ginasio')" x-data="genGinasio()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-gem"></i> Tipo do Ginásio</h2>
+        <div class="st-type-grid">
+          <template x-for="t in types" :key="t">
+            <div class="st-type-btn" :class="{selected:tipoSelecionado===t}" @click="selectType(t)">
+              <img :src="typeIcons[t]" :alt="t">
+              <span x-text="typePT[t]"></span>
+            </div>
+          </template>
+        </div>
+        <div class="st-type-display" :class="{selected:tipoSelecionado}" x-text="tipoSelecionado ? `Tipo selecionado: ${typePT[tipoSelecionado]}` : 'Nenhum tipo selecionado'"></div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-map-marked-alt"></i> Instalações</h2>
+        <h3><i class="fas fa-swords"></i> Arena de Batalha</h3>
+        <div class="st-grid" style="margin-bottom:12px">
+          <div class="st-group"><label><i class="fas fa-image"></i> Imagem (URL)</label><input type="text" x-model="arenaImg" placeholder="https://..."></div>
+          <div class="st-group"><label><i class="fas fa-heading"></i> Nome</label><input type="text" x-model="arenaNome" placeholder="Ex: Galeria de Mármore"></div>
+          <div class="st-group st-span2"><label>Descrição</label><textarea x-model="arenaDesc" placeholder="Descreva a arena..."></textarea></div>
+        </div>
+        <h3><i class="fas fa-microphone"></i> Palco de Shows</h3>
+        <div class="st-grid">
+          <div class="st-group"><label><i class="fas fa-image"></i> Imagem (URL)</label><input type="text" x-model="palcoImg" placeholder="https://..."></div>
+          <div class="st-group"><label><i class="fas fa-heading"></i> Nome</label><input type="text" x-model="palcoNome" placeholder="Ex: Teatro das Musas"></div>
+          <div class="st-group st-span2"><label>Descrição</label><textarea x-model="palcoDesc" placeholder="Descreva o palco..."></textarea></div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-trophy"></i> Provas de Valor</h2>
+        <div class="st-group" style="margin-bottom:12px"><label>Batalha de Ginásio</label><textarea x-model="batalhaDesc" placeholder="Regras e formato da batalha..."></textarea></div>
+        <div class="st-group" style="margin-bottom:12px"><label>Batalha de Concurso</label><textarea x-model="concursoDesc" placeholder="Regras e formato do concurso..."></textarea></div>
+        <div class="st-group"><label>Desafio do Líder</label><textarea x-model="desafioDesc" placeholder="Desafio especial do líder..."></textarea></div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-dragon"></i> Banco do Ginásio (12 Pokémon)</h2>
+        <div class="st-gym-grid">
+          <template x-for="(slot, i) in slots" :key="i">
+            <div class="st-gym-slot">
+              <div style="font-size:11px;color:var(--white2);font-weight:600" x-text="`Pokémon ${i+1}`"></div>
+              <select x-model="slot.gen" @change="onSlotGenChange(i)" style="font-size:11px;padding:6px 24px 6px 8px">
+                <option value="">Gen</option>
+                <template x-for="g in [1,2,3,4,5,6,7,8,9]" :key="g">
+                  <option :value="g" x-text="`Gen ${g}`"></option>
+                </template>
+              </select>
+              <div class="st-ac-wrap" style="width:100%">
+                <input type="text" x-model="slot.query" @input="slot.search(slot.gen)" :disabled="!slot.gen" style="font-size:11px;padding:6px 9px" placeholder="Buscar...">
+                <div class="st-ac-list" :class="{open:slot.showList}">
+                  <template x-for="p in slot.suggestions" :key="p.id">
+                    <div class="st-ac-item" @click="slot.select(p)" style="font-size:11px;padding:7px 10px"><img :src="p.artwork" :alt="p.name"><span x-text="p.name"></span></div>
+                  </template>
+                </div>
+              </div>
+              <template x-if="slot.forms.length">
+                <select x-model="slot.formSelected" @change="slot.formSelected = slot.forms.find(f => f.id === +$event.target.value) || null" style="font-size:10px;padding:5px 20px 5px 7px">
+                  <option value="">Padrão</option>
+                  <template x-for="f in slot.forms" :key="f.id"><option :value="f.id" x-text="f.name"></option></template>
+                </select>
+              </template>
+              <div class="st-gym-preview">
+                <img x-show="slot.selected" :src="slotArtwork(i)" :alt="slot.selected?.name">
+                <span x-show="!slot.selected">—</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-code"></i> Código Gerado</h2>
+        <div class="st-btn-row">
+          <button @click="gerar()"><i class="fas fa-wand-magic-sparkles"></i> Gerar Código</button>
+          <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+        </div>
+        <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         EDITOR DE MOCHILA
+    ════════════════════════════════════════════════════ -->
+    <div x-show="isActive('edit-mochila')" x-data="bagEditor()" x-cloak>
+      <div class="st-section">
+        <h2><i class="fas fa-file-arrow-up"></i> Importar / Starter</h2>
+        <div class="st-btn-row">
+          <button @click="loadStarter()"><i class="fas fa-star"></i> Ficha Inicial</button>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-dollar-sign"></i> Dinheiro</h2>
+        <div class="st-grid">
+          <div>
+            <h3><i class="fas fa-wallet"></i> Pokédollars</h3>
+            <div class="st-grid" style="gap:8px;margin-bottom:8px">
+              <div class="st-group"><label>Valor Atual</label><input type="text" :value="pdFormatted" readonly></div>
+              <div class="st-group"><label>Ajustar</label><input type="number" x-model="adjustPd" min="1"></div>
+            </div>
+            <div class="st-btn-row">
+              <button @click="adjustMoney('pd',false)" class="st-btn-sec"><i class="fas fa-minus"></i> Subtrair</button>
+              <button @click="adjustMoney('pd',true)"><i class="fas fa-plus"></i> Adicionar</button>
+            </div>
+          </div>
+          <div>
+            <h3><i class="fas fa-coins"></i> Fichas</h3>
+            <div class="st-grid" style="gap:8px;margin-bottom:8px">
+              <div class="st-group"><label>Valor Atual</label><input type="text" :value="fichasFormatted" readonly></div>
+              <div class="st-group"><label>Ajustar</label><input type="number" x-model="adjustFichas" min="1"></div>
+            </div>
+            <div class="st-btn-row">
+              <button @click="adjustMoney('fichas',false)" class="st-btn-sec"><i class="fas fa-minus"></i> Subtrair</button>
+              <button @click="adjustMoney('fichas',true)"><i class="fas fa-plus"></i> Adicionar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-box-open"></i> Adicionar Item</h2>
+        <div class="st-grid">
+          <div class="st-group">
+            <label>Buscar Item</label>
+            <div class="st-ac-wrap">
+              <input type="text" x-model="search.query" @input="search.search()" placeholder="Digite para buscar...">
+              <div class="st-ac-list" :class="{open:search.showList}">
+                <template x-for="item in search.suggestions" :key="item.id">
+                  <div class="st-ac-item" @click="search.select(item)">
+                    <img :src="item.sprite" :alt="item.name">
+                    <span x-text="item.name"></span>
+                    <small x-text="item.category"></small>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div class="st-group">
+            <label>Quantidade</label>
+            <input type="number" x-model="search.qty" min="1" :disabled="search.isUnique">
+          </div>
+        </div>
+        <div x-show="search.showSkins" style="margin-top:12px">
+          <div class="st-group">
+            <label>Skin do Rotom Phone</label>
+            <select @change="search.skin = rotomSkins.find(s => s.nome === $event.target.value) || null">
+              <template x-for="s in rotomSkins" :key="s.nome">
+                <option :value="s.nome" x-text="s.nome"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+        <div class="st-btn-row" style="margin-top:12px">
+          <button @click="addItem()"><i class="fas fa-plus-circle"></i> Adicionar</button>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-suitcase-rolling"></i> Itens na Mochila</h2>
+        <template x-for="cat in orderCategoria" :key="cat">
+          <div x-show="items[cat]?.length">
+            <h3 x-text="labelFor(cat)"></h3>
+            <div class="st-bag-items" style="margin-bottom:14px">
+              <template x-for="(item, idx) in items[cat]" :key="idx">
+                <div class="st-bag-item">
+                  <img :src="item.sprite" :alt="item.name">
+                  <div class="st-bag-item-info">
+                    <div class="st-bag-item-name" x-text="item.name"></div>
+                    <div class="st-bag-item-qty" x-text="`Qtd: ${item.quantidade}`"></div>
+                  </div>
+                  <div class="st-bag-item-actions">
+                    <button x-show="!item.is_unique" @click="changeQty(cat,idx)" class="st-btn-sec"><i class="fas fa-edit"></i></button>
+                    <button @click="removeItem(cat,idx)" class="st-btn-danger"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+        <p x-show="!Object.values(items).some(v => v.length)" style="color:var(--white2);font-size:13px;text-align:center;padding:20px 0">
+          Nenhum item adicionado ainda.
+        </p>
+      </div>
+
+      <div class="st-section">
+        <h2><i class="fas fa-code"></i> Código Gerado</h2>
+        <div class="st-btn-row">
+          <button @click="gerar()"><i class="fas fa-code"></i> Gerar Código</button>
+          <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+        </div>
+        <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+    </div>
+
+  </div><!-- fim toolNav -->
+</div><!-- fim .st-wrap -->
+
+<!-- ════════════════════════════════════════════════════════
+     DEPENDÊNCIAS EXTERNAS
+     Carregar via CDN antes de qualquer script do projeto.
+════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<!-- ════════════════════════════════════════════════════════
+     SCRIPTS DO PROJETO — caminhos locais para desenvolvimento
+     ORDEM OBRIGATÓRIA: constants → utils → supabase → stores → hooks → tools → alpine
+════════════════════════════════════════════════════════ -->
+<script src="./js/supabase.js"></script>
+
+<!-- Constants -->
+<script src="./js/constants/exp-tables.js"></script>
+<script src="./js/constants/pokemon-types.js"></script>
+<script src="./js/constants/items-meta.js"></script>
+<script src="./js/constants/property-data.js"></script>
+<script src="./js/constants/misc.js"></script>
+
+<!-- Utils -->
+<script src="./js/utils/format.js"></script>
+<script src="./js/utils/exp.js"></script>
+<script src="./js/utils/clipboard.js"></script>
+
+<!-- Stores -->
+<script src="./js/stores/api.store.js"></script>
+
+<!-- Hooks -->
+<script src="./js/hooks/search-factories.js"></script>
+
+<!-- Tools -->
+<script src="./js/tools/nav.js"></script>
+<script src="./js/tools/calc-rp.js"></script>
+<script src="./js/tools/calc-batalha.js"></script>
+<script src="./js/tools/calc-personagem.js"></script>
+<script src="./js/tools/gen-pokemon.js"></script>
+<script src="./js/tools/gen-propriedade.js"></script>
+<script src="./js/tools/gen-lider.js"></script>
+<script src="./js/tools/gen-ginasio.js"></script>
+<script src="./js/tools/bag-editor.js"></script>
+
+<!-- Alpine — SEMPRE por último, com defer -->
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+name: Purge jsDelivr CDN Cache
+
+# Dispara em pushes na branch main que alteram JS ou HTML
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'js/**'
+      - 'index.html'
+      - 'css/**'
+
+jobs:
+  purge:
+    name: Purge jsDelivr
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # jsDelivr Purge API: GET https://purge.jsdelivr.net/gh/OWNER/REPO@latest/ARQUIVO
+      # Sem autenticação necessária para repos públicos.
+      # Rate limit: ~50 req/min — suficiente para este projeto.
+
+      - name: Purge arquivos JS
+        run: |
+          REPO="${{ github.repository }}"
+          echo "Repo: $REPO"
+
+          purge() {
+            local path="$1"
+            local url="https://purge.jsdelivr.net/gh/${REPO}@latest/${path}"
+            local status
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+            echo "  [$status] $path"
+          }
+
+          echo "── Purgando JS ──"
+          find js -name "*.js" | sort | while read -r file; do
+            purge "$file"
+          done
+
+          echo "── Purgando HTML ──"
+          purge "index.html"
+
+          echo "── Purgando CSS (se existir) ──"
+          if [ -d css ]; then
+            find css -name "*.css" | sort | while read -r file; do
+              purge "$file"
+            done
+          fi
+
+          echo "✓ Purge concluído"
+
+      # Opcional: mostra os arquivos alterados neste push para diagnóstico
+      - name: Arquivos alterados neste push
+        run: |
+          echo "Arquivos no commit:"
+          git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "(primeiro commit)"

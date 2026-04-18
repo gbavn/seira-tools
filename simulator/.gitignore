@@ -1,0 +1,29 @@
+# ══════════════════════════════════════════════════════════
+# Seira Tools — .gitignore
+# ══════════════════════════════════════════════════════════
+
+# Simulador local (wrapper do Forumeiros para desenvolvimento)
+# Estes arquivos NÃO vão para o GitHub nem para o jsDelivr
+simulator/
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependências (caso use algum tooling futuro)
+node_modules/
