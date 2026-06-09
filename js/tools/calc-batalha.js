@@ -70,7 +70,7 @@ document.addEventListener('alpine:init', () => {
           subiu,
           felicAntes,
           felicGanha,
-          felicNova:   felicAntes + felicGanha,
+          felicNova:   Math.min(255, felicAntes + felicGanha),
           nivel:       r.nivel,
           expAtual:    r.expAtual,
           expMax:      r.expMax,
