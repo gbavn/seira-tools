@@ -37,11 +37,25 @@ function stCalcNivelPokemon(nivelAtual, expAtual, expGanha) {
 }
 
 /**
+ * Calcula a felicidade ganha ao subir de nível.
+ * Padrão: +3 por nível subido. Com Ressonância: +5 por nível subido.
+ * Não sobe nível → 0.
+ *
+ * @param {number} niveisSubidos - Quantidade de níveis ganhos
+ * @param {boolean} ressonancia  - Perícia Ressonância ativa
+ * @returns {number}
+ */
+function stCalcFelicidade(niveisSubidos, ressonancia) {
+  if (niveisSubidos <= 0) return 0;
+  return niveisSubidos * (ressonancia ? 5 : 3);
+}
+
+/**
  * Cria o estado inicial de um slot de time para batalha.
  * @param {number} i - índice do slot (0-based)
  */
 function stMakeSlotBatalha(i) {
-  return { nome: `Pokémon ${i + 1}`, nivel: 1, expAtual: 0, luckyEgg: false, domador: false, evento: 1, fixo: 0 };
+  return { nome: `Pokémon ${i + 1}`, nivel: 1, expAtual: 0, felicidade: 70, luckyEgg: false, domador: false, evento: 1, fixo: 0 };
 }
 
 /**
@@ -49,5 +63,5 @@ function stMakeSlotBatalha(i) {
  * @param {number} i - índice do slot (0-based)
  */
 function stMakeSlotRP(i) {
-  return { nome: `Pokémon ${i + 1}`, nivel: 1, expAtual: 0, domador: false, evento: 1, fixo: 0 };
+  return { nome: `Pokémon ${i + 1}`, nivel: 1, expAtual: 0, felicidade: 70, domador: false, evento: 1, fixo: 0 };
 }
