@@ -23,14 +23,19 @@
     .st-type-btn.selected { border-color: #fff; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); color: var(--white); }
 
     /* ── Cards de resultado ── */
-    .st-result-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-top: 4px; }
+    .st-result-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 4px; }
     .st-result-card { border-radius: 8px; padding: 12px 14px; font-size: 13px; }
     .st-result-card.level-up  { background: rgba(45,106,64,0.2);  border: 1px solid #3a8c53; }
     .st-result-card.no-change { background: rgba(30,58,138,0.2);  border: 1px solid #3b5cc4; }
     .st-result-name   { font-weight: 600; color: var(--white); margin-bottom: 4px; }
-    .st-result-detail { color: var(--white1); font-size: 12px; }
+    .st-result-detail { color: var(--white1); font-size: 13px; line-height: 1.5; }
+    .st-result-detail > span:first-child { font-weight: 600; color: var(--white); }
     .st-result-exp    { color: #7dd99a; font-weight: 600; }
     .st-result-exp.neutral { color: #93c5fd; }
+
+    /* ── Faixa de perícias ativas (Ressonância) ── */
+    .st-pericias-row { margin-top: 14px; padding: 12px 14px; background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; }
+    .st-pericias-row .st-switch-wrap { width: 100%; }
 
     /* ── Cards de Pokémon do time ── */
     .st-pokemon-card { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 16px; }
@@ -219,10 +224,11 @@
           <template x-for="(slot, idx) in team" :key="idx">
             <div class="st-pokemon-card">
               <div class="st-pokemon-card-name" x-text="`Pokémon ${idx+1}`"></div>
-              <div class="st-grid-3" style="gap:8px;margin-bottom:8px">
+              <div class="st-grid-auto" style="gap:8px;margin-bottom:8px">
                 <div class="st-group"><label>Nome</label><input type="text" x-model="slot.nome"></div>
                 <div class="st-group"><label>Nível</label><input type="number" x-model="slot.nivel" min="1" max="100"></div>
                 <div class="st-group"><label>EXP Atual</label><input type="number" x-model="slot.expAtual" min="0"></div>
+                <div class="st-group"><label>Felicidade</label><input type="number" x-model="slot.felicidade" min="0" max="255"></div>
               </div>
               <div class="st-bonus-row">
                 <div class="st-switch-wrap" style="flex:1">
@@ -237,6 +243,14 @@
             </div>
           </template>
         </div>
+
+        <div class="st-pericias-row">
+          <div class="st-switch-wrap">
+            <span><i class="fas fa-wave-square"></i> Ressonância <small style="color:var(--white2);font-weight:400">— +5 de felicidade por nível (em vez de +3)</small></span>
+            <label class="st-switch"><input type="checkbox" x-model="ressonancia"><span class="st-slider"></span></label>
+          </div>
+        </div>
+
         <div class="st-btn-row" style="margin-top:14px">
           <button @click="calcular()"><i class="fas fa-calculator"></i> Calcular</button>
         </div>
@@ -247,12 +261,15 @@
         <div class="st-result-grid">
           <template x-for="r in results" :key="r.nome">
             <div class="st-result-card" :class="r.subiu ? 'level-up' : 'no-change'">
-              <div class="st-result-name" x-text="r.nome"></div>
               <div class="st-result-detail">
-                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`+${r.ganhou} EXP`"></span>
-                &nbsp;→&nbsp;
-                <span x-text="`Nv. ${r.nivel} (${r.expAtual}/${r.expMax})`"></span>
-                <template x-if="r.subiu"><span style="color:#7dd99a;font-weight:600;display:block;margin-top:2px">⬆ Subiu de nível!</span></template>
+                <span x-text="r.nome"></span>
+                recebeu
+                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`${r.ganhou} de EXP`"></span>
+                <span x-show="r.expMax > 0" x-text="`(${r.expAtual}/${r.expMax})`"></span>
+                <template x-if="r.subiu">
+                  <span style="color:#7dd99a;font-weight:600"
+                        x-text="` — Subiu para o nível ${r.nivel} e recebeu ${r.felicGanha} de felicidade (${r.felicAntes} → ${r.felicNova})!`"></span>
+                </template>
               </div>
             </div>
           </template>
@@ -321,10 +338,11 @@
           <template x-for="(slot, idx) in team" :key="idx">
             <div class="st-pokemon-card">
               <div class="st-pokemon-card-name" x-text="`Pokémon ${idx+1}`"></div>
-              <div class="st-grid-3" style="gap:8px;margin-bottom:8px">
+              <div class="st-grid-auto" style="gap:8px;margin-bottom:8px">
                 <div class="st-group"><label>Nome</label><input type="text" x-model="slot.nome"></div>
                 <div class="st-group"><label>Nível</label><input type="number" x-model="slot.nivel" min="1" max="100"></div>
                 <div class="st-group"><label>EXP Atual</label><input type="number" x-model="slot.expAtual" min="0"></div>
+                <div class="st-group"><label>Felicidade</label><input type="number" x-model="slot.felicidade" min="0" max="255"></div>
               </div>
               <div class="st-bonus-row">
                 <div class="st-switch-wrap" style="flex:1">
@@ -343,6 +361,14 @@
             </div>
           </template>
         </div>
+
+        <div class="st-pericias-row">
+          <div class="st-switch-wrap">
+            <span><i class="fas fa-wave-square"></i> Ressonância <small style="color:var(--white2);font-weight:400">— +5 de felicidade por nível (em vez de +3)</small></span>
+            <label class="st-switch"><input type="checkbox" x-model="ressonancia"><span class="st-slider"></span></label>
+          </div>
+        </div>
+
         <div class="st-btn-row" style="margin-top:14px">
           <button @click="calcular()"><i class="fas fa-calculator"></i> Calcular</button>
         </div>
@@ -353,12 +379,15 @@
         <div class="st-result-grid">
           <template x-for="r in results" :key="r.nome">
             <div class="st-result-card" :class="r.subiu ? 'level-up' : 'no-change'">
-              <div class="st-result-name" x-text="r.nome"></div>
               <div class="st-result-detail">
-                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`+${r.ganhou} EXP`"></span>
-                &nbsp;→&nbsp;
-                <span x-text="`Nv. ${r.nivel} (${r.expAtual}/${r.expMax})`"></span>
-                <template x-if="r.subiu"><span style="color:#7dd99a;font-weight:600;display:block;margin-top:2px">⬆ Subiu de nível!</span></template>
+                <span x-text="r.nome"></span>
+                recebeu
+                <span class="st-result-exp" :class="r.subiu ? '' : 'neutral'" x-text="`${r.ganhou} de EXP`"></span>
+                <span x-show="r.expMax > 0" x-text="`(${r.expAtual}/${r.expMax})`"></span>
+                <template x-if="r.subiu">
+                  <span style="color:#7dd99a;font-weight:600"
+                        x-text="` — Subiu para o nível ${r.nivel} e recebeu ${r.felicGanha} de felicidade (${r.felicAntes} → ${r.felicNova})!`"></span>
+                </template>
               </div>
             </div>
           </template>
