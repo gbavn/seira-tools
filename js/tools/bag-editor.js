@@ -25,6 +25,7 @@ document.addEventListener('alpine:init', () => {
     adjustFichas: 10,
     search:       makeItemSearchSlot(),
     rotomSkins:   ST_ROTOM_SKINS,
+    importCode:   '',
     code:         '',
     copied:       false,
     _t:           null,
@@ -115,6 +116,101 @@ document.addEventListener('alpine:init', () => {
       ];
       this.pokedollars = 5000;
       this.fichas      = 0;
+    },
+
+    /* ── Importar código ──────────────────────────────────────────────
+       Parseia o HTML gerado pelo próprio editor e repopula o estado.
+       Cada item é cruzado com o banco (rpg.items) pelo nome: se houver
+       correspondência, categoria/sprite/is_unique vêm do banco; senão,
+       cai no fallback derivado do próprio HTML. */
+    importar() {
+      const raw = (this.importCode || '').trim();
+      if (!raw) { alert('Cole o código da mochila primeiro.'); return; }
+
+      let doc;
+      try {
+        doc = new DOMParser().parseFromString(raw, 'text/html');
+      } catch (e) {
+        alert('Não foi possível ler o código. Verifique se está completo.');
+        return;
+      }
+
+      if (!doc.querySelector('.mochila-container')) {
+        alert('Código inválido: não parece ser uma mochila gerada por esta ferramenta.');
+        return;
+      }
+
+      const api    = Alpine.store('api');
+      const byName = new Map();
+      if (api?.ready) api.items.forEach(it => byName.set(it.name.toLowerCase(), it));
+
+      // Reseta o estado (preserva medicinais fixos se aplicável)
+      const fresh = Object.fromEntries(ST_CATEGORY_ORDER.map(c => [c, []]));
+
+      // Dinheiro
+      const moneySpans = doc.querySelectorAll('.mochila-dinheiro .tabmoney span');
+      if (moneySpans[0]) this.pokedollars = parseInt(moneySpans[0].textContent.replace(/[^\d]/g, ''), 10) || 0;
+      if (moneySpans[1]) this.fichas      = parseInt(moneySpans[1].textContent.replace(/[^\d]/g, ''), 10) || 0;
+
+      // Itens, por aba de conteúdo
+      doc.querySelectorAll('.mochila-tabcontent').forEach(content => {
+        // id = `${pref}${cat}-content` → remove sufixo e qualquer prefixo de tab
+        let catFromId = (content.id || '').replace(/-content$/, '');
+        const known = ST_CATEGORY_ORDER.find(c => catFromId === c || catFromId.endsWith(c));
+        catFromId = known || 'outros-itens';
+
+        content.querySelectorAll('.mochila-item').forEach(itemEl => {
+          const img = itemEl.querySelector('img');
+          if (!img) return; // slot vazio
+
+          // Nome = texto do item sem img e sem span
+          const clone = itemEl.cloneNode(true);
+          clone.querySelectorAll('img, span').forEach(n => n.remove());
+          const nome = clone.textContent.trim();
+          if (!nome) return;
+
+          const spanTxt    = itemEl.querySelector('span')?.textContent.trim() || '';
+          const htmlUnique = !/\d/.test(spanTxt); // "Único" não tem dígito
+          const htmlQty    = htmlUnique ? 'Único' : spanTxt.replace(/x$/i, '').trim();
+
+          // Cruzamento com o banco pelo nome
+          const dbItem = byName.get(nome.toLowerCase());
+          let cat, sprite, isUnique;
+          if (dbItem) {
+            cat      = ST_CATEGORY_MAP[dbItem.category] || catFromId;
+            sprite   = dbItem.sprite || img.src;
+            isUnique = dbItem.is_unique ?? htmlUnique;
+          } else {
+            cat      = catFromId;
+            sprite   = img.src;
+            isUnique = htmlUnique;
+          }
+
+          // Rotom Phone preserva a skin do código (sprite do HTML, não do banco)
+          if (/rotom\s*phone/i.test(nome)) { sprite = img.src; isUnique = true; }
+
+          if (!fresh[cat]) fresh[cat] = [];
+          const qty = isUnique ? 'Único' : (htmlQty || '1');
+          const dup = fresh[cat].findIndex(i => i.name === nome && i.sprite === sprite);
+          if (dup !== -1 && !isUnique) {
+            const cur = parseInt(fresh[cat][dup].quantidade, 10) || 0;
+            fresh[cat][dup].quantidade = (cur + (parseInt(qty, 10) || 0)).toString();
+          } else if (dup === -1) {
+            fresh[cat].push({ name: nome, sprite, quantidade: qty, is_unique: isUnique });
+          }
+        });
+      });
+
+      // Medicinais fixos têm precedência sobre o que veio do código
+      if (this.fixedMedicinais) {
+        fresh['itens-medicinais'] = ST_FIXED_MEDICINAIS.map(i => ({
+          ...i, quantidade: 'Único', is_unique: true,
+        }));
+      }
+
+      this.items = fresh;
+      this.gerar();
+      this.importCode = '';
     },
 
     /* ── Geração de código ── */
