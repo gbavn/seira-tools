@@ -853,8 +853,13 @@
     <div x-show="isActive('edit-mochila')" x-data="bagEditor()" x-cloak>
       <div class="st-section">
         <h2><i class="fas fa-file-arrow-up"></i> Importar / Starter</h2>
-        <div class="st-btn-row">
+        <div class="st-btn-row" style="margin-bottom:10px">
           <button @click="loadStarter()"><i class="fas fa-star"></i> Ficha Inicial</button>
+          <button class="st-btn-sec" @click="importar()"><i class="fas fa-file-import"></i> Importar Código</button>
+        </div>
+        <div class="st-group">
+          <label>Cole o código da mochila para reimportar os itens</label>
+          <textarea class="st-code" x-model="importCode" placeholder="Cole aqui o código HTML gerado pela mochila..."></textarea>
         </div>
       </div>
 
@@ -958,6 +963,11 @@
           <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
         </div>
         <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+      </div>
+
+      <div class="st-section" x-show="code">
+        <h2><i class="fas fa-eye"></i> Preview</h2>
+        <div class="mochila-preview" x-html="code"></div>
       </div>
     </div>
 
