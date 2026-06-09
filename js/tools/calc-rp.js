@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('calcRP', () => ({
     nivelTreinador:  1,
     qtParticipantes: 1,
+    ressonancia:     false,
     team:    [stMakeSlotRP(0)],
     results: [],
 
@@ -26,19 +27,37 @@ document.addEventListener('alpine:init', () => {
       const rank   = 1 + (nivelP - 1) * 0.1;
 
       this.results = this.team.map(s => {
-        // Valor fixo sobrescreve o cálculo
+        const nivelAntes  = +s.nivel || 1;
+        const felicAntes  = +s.felicidade || 0;
+
+        // EXP ganha: valor fixo sobrescreve o cálculo
+        let exp;
         if (+s.fixo > 0) {
-          const r = stCalcNivelPokemon(+s.nivel, +s.expAtual, +s.fixo);
-          return { ...s, ganhou: +s.fixo, ...r };
+          exp = +s.fixo;
+        } else {
+          let MET = 1;
+          if (s.domador) MET *= 1 + Math.min(0.35, 0.15 + (nivelP - 1) * 0.02);
+          if (+s.evento > 1) MET *= +s.evento;
+          exp = Math.round(((70 * rank) * nivelAntes * 0.25) * MET / qt);
         }
 
-        let MET = 1;
-        if (s.domador) MET *= 1 + Math.min(0.35, 0.15 + (nivelP - 1) * 0.02);
-        if (+s.evento > 1) MET *= +s.evento;
+        const r             = stCalcNivelPokemon(nivelAntes, +s.expAtual, exp);
+        const niveisSubidos = Math.max(0, r.nivel - nivelAntes);
+        const subiu         = niveisSubidos > 0;
+        const felicGanha    = stCalcFelicidade(niveisSubidos, this.ressonancia);
 
-        const exp = Math.round(((70 * rank) * (+s.nivel) * 0.25) * MET / qt);
-        const r   = stCalcNivelPokemon(+s.nivel, +s.expAtual, exp);
-        return { ...s, ganhou: exp, ...r };
+        return {
+          nome:        s.nome,
+          ganhou:      exp,
+          nivelAntes,
+          subiu,
+          felicAntes,
+          felicGanha,
+          felicNova:   felicAntes + felicGanha,
+          nivel:       r.nivel,
+          expAtual:    r.expAtual,
+          expMax:      r.expMax,
+        };
       });
     },
   }));
