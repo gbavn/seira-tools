@@ -36,6 +36,18 @@ document.addEventListener('alpine:init', () => {
     calcular() {
       if (!this.enemy.selected) { alert('Selecione o Pokémon inimigo.'); return; }
 
+      for (const s of this.team) {
+        if (+s.nivel > 100) {
+          alert(`O Pokémon "${s.nome}" está com nível ${s.nivel}, mas o limite máximo é nível 100.`);
+          return;
+        }
+      }
+
+      if (+this.enemyLevel > 100) {
+        alert(`O nível do inimigo não pode ser maior que 100.`);
+        return;
+      }
+
       const base   = this.enemy.selected.base_experience || 100;
       const nivel  = +this.enemyLevel || 1;
       const MC     = +this.tipoConfronto || 1;
