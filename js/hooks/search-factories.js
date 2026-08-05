@@ -124,7 +124,7 @@ function makeMoveSearchSlot(opts = {}) {
     selected:    null,
     suggestions: [],
     showList:    false,
-    tag:         'normal', // 'normal' | 'tm' | 'em'
+    tag:         'normal', // 'normal' | 'tm' | 'em' | 'es'
 
     search() {
       if (this.query.length < 1) { this.showList = false; return; }

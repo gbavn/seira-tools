@@ -1,10 +1,21 @@
 /* ── Gerador de Pokémon ──────────────────────────────────────────────────
    Gera o código BBcode de ficha completa de um Pokémon.
    Depende de: makePokemonSearchSlot, makeMoveSearchSlot (hooks/search-factories.js),
+               makePreviewPanel (hooks/preview-factories.js),
                stFormatName, stSlugifyBall (utils/format.js),
+               stRenderPokeCard, stEsc (utils/poke-card-render.js),
                stCopyText (utils/clipboard.js),
-               ST_EXP_TABLE (constants/exp-tables.js)
+               ST_EXP_TABLE (constants/exp-tables.js),
+               ST_POKEBALL_ORDER (constants/items-meta.js)
 ──────────────────────────────────────────────────────────────────────── */
+
+// tag do slot de movimento → tag BBCode emitida pelo parser do fórum
+const ST_MOVE_TAG_BBCODE = {
+  normal: 'move',
+  tm:     'move-tm',
+  em:     'move-em',
+  es:     'move-es',
+};
 
 document.addEventListener('alpine:init', () => {
 
@@ -25,15 +36,25 @@ document.addEventListener('alpine:init', () => {
     ot:          '',
     particularidades: '',
     stats:       { hp: 0, atq: 0, def: 0, atqesp: 0, defesp: 0, vel: 0 },
+    concurso:    { cool: 0, beautiful: 0, cute: 0, clever: 0, tough: 0 },
     moves:       Array.from({ length: 6 }, () => makeMoveSearchSlot()),
     pokeballs:   [],
+    preview:     makePreviewPanel(),
     code:        '',
     copied:      false,
     _t:          null,
 
     init() {
       Alpine.store('api').load().then(() => {
-        this.pokeballs = Alpine.store('api').items.filter(i => i.category === 'pokeball');
+        const raw = Alpine.store('api').items.filter(i => i.category === 'pokeball');
+        this.pokeballs = raw.slice().sort((a, b) => {
+          const ia = ST_POKEBALL_ORDER.indexOf(stSlugifyBall(a.name));
+          const ib = ST_POKEBALL_ORDER.indexOf(stSlugifyBall(b.name));
+          if (ia === -1 && ib === -1) return a.name.localeCompare(b.name);
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        });
         const pb = this.pokeballs.find(b => /poké\s*ball/i.test(b.name));
         if (pb) this.pokeball = pb.id;
       });
@@ -75,6 +96,37 @@ document.addEventListener('alpine:init', () => {
       this.gender = this.genderOptions[0]?.value || '';
     },
 
+    /**
+     * Preenche os 6 slots de movimento com os últimos golpes de level-up
+     * aprendidos até o nível atual (do maior nível pro menor).
+     */
+    carregarUltimosMovimentos() {
+      const d = this.displayPokemon;
+      if (!d) { alert('Selecione um Pokémon.'); return; }
+      const learnset = d.moveset_by_level || [];
+      if (!learnset.length) { alert('Este Pokémon não tem moveset de level-up cadastrado.'); return; }
+
+      const nivel = +this.nivel || 0;
+      const maxLevelByMove = new Map();
+      learnset.forEach(({ move, level }) => {
+        if (level > nivel) return;
+        const atual = maxLevelByMove.get(move);
+        if (atual === undefined || level > atual) maxLevelByMove.set(move, level);
+      });
+
+      const aprendidos = [...maxLevelByMove.entries()].sort((a, b) => b[1] - a[1]);
+      const apiMoves = Alpine.store('api').moves;
+
+      this.moves.forEach((slot, i) => {
+        const entry = aprendidos[i];
+        if (!entry) { slot.clear(); return; }
+        const [nome] = entry;
+        const found = apiMoves.find(m => m.name.toLowerCase() === nome.toLowerCase());
+        slot.select(found || { name: nome, type: '' });
+        slot.tag = 'normal';
+      });
+    },
+
     get displayPokemon() { return this.species.formSelected ?? this.species.selected; },
     get tipos() {
       const d = this.displayPokemon;
@@ -95,11 +147,10 @@ document.addEventListener('alpine:init', () => {
       const moveTags = this.moves
         .filter(s => s.selected)
         .map(s => {
-          let name = stFormatName(s.selected.name);
-          if (s.tag === 'tm') name += ' (TM)';
-          if (s.tag === 'em') name += ' (EM)';
-          const t = (s.selected.type || '').toLowerCase();
-          return `[move${t ? ` t="${t}"` : ''}]${name}[/move]`;
+          const name = stFormatName(s.selected.name);
+          const tag  = ST_MOVE_TAG_BBCODE[s.tag] || 'move';
+          const t    = (s.selected.type || '').toLowerCase();
+          return `[${tag}${t ? ` t="${t}"` : ''}]${name}[/${tag}]`;
         });
 
       const st = this.stats;
@@ -111,6 +162,14 @@ document.addEventListener('alpine:init', () => {
       if (st.defesp) sa += ` tdefesp="${st.defesp}"`;
       if (st.vel)    sa += ` tvel="${st.vel}"`;
 
+      const cs = this.concurso;
+      let ca = '';
+      if (cs.cool)      ca += ` cool="${cs.cool}"`;
+      if (cs.beautiful) ca += ` beautiful="${cs.beautiful}"`;
+      if (cs.cute)      ca += ` cute="${cs.cute}"`;
+      if (cs.clever)    ca += ` clever="${cs.clever}"`;
+      if (cs.tough)     ca += ` tough="${cs.tough}"`;
+
       const spoilerLabel = this.apelido && this.apelido !== stFormatName(d.name)
         ? `${stFormatName(this.species.selected.name)} / ${this.apelido}`
         : stFormatName(d.name);
@@ -120,12 +179,65 @@ document.addEventListener('alpine:init', () => {
         `[poke nick="${nick}" especie="${stFormatName(d.name)}" art="${d.artwork || ''}"`,
         ` tipo="${this.tipos}" ball="${ballSlug}"${gnrAttr}`,
         ` hab="${stFormatName(this.ability)}" level="${this.nivel}" exp="${this.expAtual}/${this.expMax}"`,
-        ` fel="${this.felicidade}/255" item="${this.item || 'Nada'}" ot="${this.ot}"]`,
+        ` fel="${this.felicidade}/255" item="${this.item || 'Nada'}" ot="${this.ot}"${ca}]`,
         `\n${this.particularidades}`,
         `\n${moveTags.join('\n')}`,
         `\n[stats ${sa}]`,
         `\n[/poke][/spoiler]`,
       ].join('');
+    },
+
+    /** Dados normalizados pro preview visual (stRenderPokeCard). */
+    get previewData() {
+      const d = this.displayPokemon;
+      if (!d) return null;
+
+      const ballObj  = this.pokeballs.find(b => b.id == this.pokeball);
+      const ballSlug = stSlugifyBall(ballObj?.name || 'pokeball');
+
+      const moves = this.moves
+        .filter(s => s.selected)
+        .map(s => ({
+          nome: stFormatName(s.selected.name),
+          tipo: (s.selected.type || '').toLowerCase(),
+          tag:  s.tag === 'normal' ? '' : s.tag,
+        }));
+
+      const statMap = [
+        ['hp', 'hp', 'HP'], ['atq', 'attack', 'ATQ'], ['def', 'defense', 'DEF'],
+        ['atqesp', 'special_attack', 'ATQ ESP.'], ['defesp', 'special_defense', 'DEF ESP.'],
+        ['vel', 'speed', 'VEL'],
+      ];
+      const stats = statMap.map(([key, dbKey, label]) => ({
+        label,
+        base: d.stats?.[dbKey] || 0,
+        tr:   +this.stats[key] || 0,
+      }));
+
+      return {
+        nick:    this.apelido || stFormatName(d.name),
+        especie: stFormatName(d.name),
+        num:     d.id,
+        art:     d.artwork,
+        tipos:   this.tipos,
+        ballIcon: 'https://www.serebii.net/itemdex/sprites/sv/' + ballSlug + '.png',
+        genero:  this.gender || 'Sem Gênero',
+        habilidade: stFormatName(this.ability),
+        level:   this.nivel,
+        exp:     `${this.expAtual}/${this.expMax}`,
+        felicidade: `${this.felicidade}/255`,
+        item:    this.item || 'Nada',
+        ot:      this.ot,
+        particularidades: stEsc(this.particularidades).replace(/\n/g, '<br>'),
+        moves,
+        stats,
+        concurso: this.concurso,
+      };
+    },
+
+    get previewHtml() {
+      const d = this.previewData;
+      return d ? stRenderPokeCard(d) : '<p class="st-preview-empty">Selecione um Pokémon para pré-visualizar.</p>';
     },
 
     copy() {

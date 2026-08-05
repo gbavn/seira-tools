@@ -4,6 +4,9 @@
    ST_CATEGORY_ORDER  → ordem de exibição das abas na mochila
    ST_CATEGORY_ICONS  → slug interno → classe de ícone (gmi)
    ST_FIXED_MEDICINAIS → itens medicinais fixos da ficha inicial
+   ST_POKEBALL_ORDER  → ordem de exibição das pokébolas (slug via stSlugifyBall);
+                         itens fora da lista (ex.: promocionais) vão pro fim,
+                         em ordem alfabética
 ──────────────────────────────────────────────────────────────────────── */
 
 const ST_CATEGORY_MAP = {
@@ -43,6 +46,15 @@ const ST_CATEGORY_ICONS = {
   'tms':             'gmi-compact-disc',
   'outros-itens':    'gmi-cake-slice',
 };
+
+const ST_POKEBALL_ORDER = [
+  'pokeball', 'greatball', 'ultraball', 'masterball', 'safariball',
+  'levelball', 'lureball', 'moonball', 'friendball', 'loveball',
+  'heavyball', 'fastball', 'repeatball', 'timerball', 'nestball',
+  'netball', 'diveball', 'luxuryball', 'healball', 'quickball',
+  'duskball', 'cherishball', 'premierball', 'dreamball', 'beastball',
+  'sportball', 'parkball', 'shinyball',
+];
 
 const ST_FIXED_MEDICINAIS = [
   { name: 'Potion',       sprite: 'https://www.serebii.net/itemdex/sprites/sv/potion.png' },
