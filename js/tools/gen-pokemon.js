@@ -118,12 +118,10 @@ document.addEventListener('alpine:init', () => {
       const moveTags = this.moves
         .filter(s => s.selected)
         .map(s => {
-          let name = stFormatName(s.selected.name);
-          if (s.tag === 'tm') name += ' (TM)';
-          if (s.tag === 'em') name += ' (EM)';
-          if (s.tag === 'es') name += ' (ES)';
-          const t = (s.selected.type || '').toLowerCase();
-          return `[move${t ? ` t="${t}"` : ''}]${name}[/move]`;
+          const name = stFormatName(s.selected.name);
+          const tag  = s.tag === 'tm' ? 'move-tm' : s.tag === 'em' ? 'move-em' : s.tag === 'es' ? 'move-es' : 'move';
+          const t    = (s.selected.type || '').toLowerCase();
+          return `[${tag}${t ? ` t="${t}"` : ''}]${name}[/${tag}]`;
         });
 
       const st = this.stats;
@@ -140,18 +138,18 @@ document.addEventListener('alpine:init', () => {
         : stFormatName(d.name);
 
       const ct = this.concurso;
-      const concursoTag = `[concurso irado="${ct.cool || 0}" belo="${ct.beautiful || 0}" fofo="${ct.cute || 0}" sagaz="${ct.clever || 0}" forte="${ct.tough || 0}"]`;
+      const ctAttr = `cool="${ct.cool || 0}" beautiful="${ct.beautiful || 0}" cute="${ct.cute || 0}" clever="${ct.clever || 0}" tough="${ct.tough || 0}"`;
 
       this.code = [
         `[spoiler="${spoilerLabel}"]`,
-        `[poke nick="${nick}" especie="${stFormatName(d.name)}" art="${d.artwork || ''}"`,
+        `[poke nick="${nick}" especie="${stFormatName(d.name)}" num="${d.id}" art="${d.artwork || ''}"`,
         ` tipo="${this.tipos}" ball="${ballSlug}"${gnrAttr}`,
         ` hab="${stFormatName(this.ability)}" level="${this.nivel}" exp="${this.expAtual}/${this.expMax}"`,
-        ` fel="${this.felicidade}/255" item="${this.item || 'Nada'}" ot="${this.ot}"]`,
+        ` fel="${this.felicidade}/255" item="${this.item || 'Nada'}" ot="${this.ot}"`,
+        ` ${ctAttr}]`,
         `\n${this.particularidades}`,
         `\n${moveTags.join('\n')}`,
         `\n[stats ${sa}]`,
-        `\n${concursoTag}`,
         `\n[/poke][/spoiler]`,
       ].join('');
     },
