@@ -112,7 +112,8 @@ document.addEventListener('alpine:init', () => {
       const d       = this.displayPokemon;
       const nick    = this.apelido || stFormatName(d.name);
       const ballObj = this.pokeballs.find(b => b.id == this.pokeball);
-      const ballSlug = stSlugifyBall(ballObj?.name || 'pokeball');
+      // Ovo usa o slug reservado "ovo" (o parser do fórum mostra o ícone de ovo em vez de pokébola).
+      const ballSlug = this.modo === 'ovo' ? 'ovo' : stSlugifyBall(ballObj?.name || 'pokeball');
       const gnrAttr = this.gender ? ` gnr="${this.gender}"` : '';
 
       const moveTags = this.moves

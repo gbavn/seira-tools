@@ -85,6 +85,12 @@
     .tabpokecontest .tabpokestatname { color: var(--white); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
     .tabpokecontest .tabpokestatvalue { color: var(--groups); font-weight: 800; font-size: 16px; }
 
+    /* ── Toggle Status/Concurso no preview (espelha o parser do fórum) ── */
+    .tabpokebottom.has-contest .tabpokesidelabel { cursor: pointer; }
+    .tabpokebottom.has-contest .tabpokecontest { display: none; }
+    .tabpokebottom.has-contest.seira-contest-active .tabpokestatus { display: none; }
+    .tabpokebottom.has-contest.seira-contest-active .tabpokecontest { display: flex; }
+
     /* ── Itens da mochila ── */
     .st-bag-items { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
     .st-bag-item { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }

@@ -42,7 +42,9 @@ function makePokemonSearchSlot(opts = {}) {
       this.query      = stFormatName(p.name);
       this.showList   = false;
       this.formSelected = null;
-      this.forms = Alpine.store('api').formsOf(p.id).filter(f => f.form_type !== 'gender');
+      // "Forma Regional" mostra só variantes regionais (Alolan/Galarian/Hisuian/Paldean...) —
+      // mega evolução, gigantamax, formas de batalha etc. têm form_type próprio e não entram aqui.
+      this.forms = Alpine.store('api').formsOf(p.id).filter(f => f.form_type === 'regional');
     },
 
     clear() {
@@ -132,6 +134,9 @@ function makeMoveSearchSlot(opts = {}) {
       if (!api.ready) return;
       const q = this.query.toLowerCase();
       this.suggestions = api.moves
+        // Max Move / Z-Move / G-Max Move são mecânicas de batalha à parte,
+        // não movimentos que um Pokémon "sabe" — não devem aparecer aqui.
+        .filter(m => !['max-move', 'z-move', 'gmax-move'].includes(m.move_class))
         .filter(m => m.name.toLowerCase().includes(q))
         .slice(0, max);
       this.showList = this.suggestions.length > 0;

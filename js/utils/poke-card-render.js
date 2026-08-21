@@ -30,6 +30,15 @@ const ST_POKE_CONTEST_META = [
 
 const ST_MOVE_TAG_ICON = { tm: 'fa-compact-disc', em: 'fa-egg', es: 'fa-star' };
 
+// Mesmo ícone de ovo usado pelo parser do fórum (POKEBALLS.ovo em seira-parser.js).
+const ST_EGG_ICON = 'https://2img.net/i.imgur.com/6Jk66Sy.png';
+
+/** Alterna entre Status e Concurso no preview — espelha bindContestToggle() do parser do fórum. */
+window.stTogglePreviewTraits = function (el) {
+  const bottom = el.closest('.tabpokebottom');
+  if (bottom) bottom.classList.toggle('seira-contest-active');
+};
+
 /**
  * Renderiza o preview do card a partir do estado de `genPokemon`.
  * @param {object} ctx — a instância Alpine de genPokemon (this).
@@ -39,8 +48,9 @@ function stRenderPokeCard(ctx) {
   if (!d) return `<p class="st-preview-empty">Selecione um Pokémon para ver o preview.</p>`;
 
   const nick = ctx.apelido || stFormatName(d.name);
-  const ballObj  = ctx.pokeballs.find(b => b.id == ctx.pokeball);
-  const ballSrc  = ballObj?.sprite || '';
+  const isOvo   = ctx.modo === 'ovo';
+  const ballObj = ctx.pokeballs.find(b => b.id == ctx.pokeball);
+  const ballSrc = isOvo ? ST_EGG_ICON : (ballObj?.sprite || '');
 
   const typeSlugs = (d.types || [d.type_1, d.type_2].filter(Boolean)).map(t => t.toLowerCase());
   const typeBadges = typeSlugs.map(t =>
@@ -97,8 +107,8 @@ function stRenderPokeCard(ctx) {
     `</div>`,
     `</div>`,
     `<div class="tabpokepart"><h4><i class="gmi gmi-polar-star"></i> Particularidades</h4><div class="fitext">${ctx.particularidades || '—'}</div></div>`,
-    `<div class="tabpokebottom">`,
-    `<div class="tabpokesidelabel"><i class="gmi gmi-spell-book"></i> Traços</div>`,
+    `<div class="tabpokebottom has-contest">`,
+    `<div class="tabpokesidelabel" onclick="stTogglePreviewTraits(this)"><i class="gmi gmi-spell-book"></i> Traços</div>`,
     `<div class="tabpoketraits">`,
     `<div class="tabpokemoves">${moveRows}</div>`,
     `<div class="tabpokestatwrap"><div class="tabpokestatus">${statRows}</div>${contestBlock}</div>`,

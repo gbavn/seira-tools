@@ -23,9 +23,24 @@ document.addEventListener('alpine:init', () => {
     ready:    false,
     loading:  false,
     error:    null,
+    _loadPromise: null,
 
-    async load() {
-      if (this.ready || this.loading) return;
+    /**
+     * Todos os componentes de ferramenta chamam load() no próprio init(),
+     * e o Alpine monta todos eles de uma vez (x-show só esconde por CSS,
+     * não adia o mount) — então load() é chamado várias vezes em paralelo
+     * na carga da página. Precisa devolver a MESMA promise pra quem chamar
+     * depois do primeiro (ex.: genPokemon/genLider usam .then() logo em
+     * seguida) esperar os dados de verdade, em vez de resolver na hora
+     * com o estado ainda vazio.
+     */
+    load() {
+      if (this.ready) return Promise.resolve();
+      if (!this._loadPromise) this._loadPromise = this._fetchAll();
+      return this._loadPromise;
+    },
+
+    async _fetchAll() {
       this.loading = true;
       this.error   = null;
 
@@ -58,6 +73,7 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {
         this.error = `Erro ao carregar dados: ${e.message}`;
         console.error('[st-api]', e);
+        this._loadPromise = null; // permite tentar de novo numa próxima chamada
       } finally {
         this.loading = false;
       }
