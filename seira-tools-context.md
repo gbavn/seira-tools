@@ -59,11 +59,13 @@ seira-tools/
 │   ├── utils/
 │   │   ├── format.js          → stFormatName, stSlugifyBall
 │   │   ├── exp.js             → stCalcNivelPokemon, stMakeSlotBatalha, stMakeSlotRP
-│   │   └── clipboard.js       → stCopyText
+│   │   ├── clipboard.js       → stCopyText
+│   │   └── poke-card-render.js → stRenderPokeCard (preview visual da ficha de Pokémon)
 │   ├── stores/
 │   │   └── api.store.js       → Alpine.store('api') — cache central de dados do RPG
 │   ├── hooks/
-│   │   └── search-factories.js → makePokemonSearchSlot, makeItemSearchSlot, makeMoveSearchSlot
+│   │   ├── search-factories.js → makePokemonSearchSlot, makeItemSearchSlot, makeMoveSearchSlot
+│   │   └── preview-factories.js → makePreviewSlot (abre/fecha o painel de preview)
 │   └── tools/
 │       ├── nav.js             → Alpine.data('toolNav') — navegação entre ferramentas
 │       ├── calc-rp.js         → Calculadora de Roleplay
@@ -154,7 +156,7 @@ Navegação gerida por `Alpine.data('toolNav')` (`active` define a tela; default
 
 ### Geradores (saída = código p/ colar no fórum)
 
-- **`genPokemon` — Gerador de Pokémon**: ficha completa em BBcode. Modos `normal` / `starter` / `ovo` / `selvagem` (starter e ovo travam nível/EXP/itens). Espécie, forma regional, gênero, habilidade, pokébola, movimentos (6 slots com tag normal/TM/EM), status treinados, OT, particularidades.
+- **`genPokemon` — Gerador de Pokémon**: ficha completa em BBcode. Modos `normal` / `starter` / `ovo` / `selvagem` (starter e ovo travam nível/EXP/itens). Espécie, forma regional, gênero, habilidade, pokébola, movimentos (6 slots com tag normal/TM/EM/Especial — botão "Carregar Últimos Movimentos" preenche os slots a partir de `moveset_by_level` do Pokémon, respeitando o nível atual), status treinados, estilos de concurso (Irado/Belo/Fofo/Sagaz/Forte, saem como `[concurso irado="" belo="" fofo="" sagaz="" forte=""]`), OT, particularidades, preview do card (`preview`/`previewHtml`, via `hooks/preview-factories.js` e `utils/poke-card-render.js`, renderizado com as classes `.tabpokecard`/`.tabpokemoves`/`.tabpokestatus`/`.tabpokecontest` do CSS do fórum).
 - **`genPropriedade` — Gerador de Propriedades**: ficha HTML de propriedade. Classe do terreno (D–S), tipo de construção, expansões (simples/complexa/monumental) limitadas por slots, custo calculado (terreno + construção + expansões) e controle mensal de manutenção (pendente/pago/atrasado).
 - **`genLider` — Gerador de Líder**: ficha HTML de líder de ginásio. Dados pessoais, tipo do ginásio (ícone), até 4 perícias (de `allPerks()`), resumo e história.
 - **`genGinasio` — Gerador de Ginásio**: ficha HTML do ginásio. Tipo, arena de batalha, palco de shows, provas de valor e banco de 12 Pokémon (cada slot com geração + busca + forma).

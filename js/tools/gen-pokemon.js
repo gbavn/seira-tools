@@ -1,6 +1,8 @@
 /* ── Gerador de Pokémon ──────────────────────────────────────────────────
    Gera o código BBcode de ficha completa de um Pokémon.
    Depende de: makePokemonSearchSlot, makeMoveSearchSlot (hooks/search-factories.js),
+               makePreviewSlot (hooks/preview-factories.js),
+               stRenderPokeCard (utils/poke-card-render.js),
                stFormatName, stSlugifyBall (utils/format.js),
                stCopyText (utils/clipboard.js),
                ST_EXP_TABLE (constants/exp-tables.js)
@@ -25,8 +27,10 @@ document.addEventListener('alpine:init', () => {
     ot:          '',
     particularidades: '',
     stats:       { hp: 0, atq: 0, def: 0, atqesp: 0, defesp: 0, vel: 0 },
+    concurso:    { cool: 0, beautiful: 0, cute: 0, clever: 0, tough: 0 },
     moves:       Array.from({ length: 6 }, () => makeMoveSearchSlot()),
     pokeballs:   [],
+    preview:     makePreviewSlot(),
     code:        '',
     copied:      false,
     _t:          null,
@@ -52,6 +56,24 @@ document.addEventListener('alpine:init', () => {
     },
 
     onGenChange() { this.species.clear(); },
+
+    carregarUltimosMovimentos() {
+      const d = this.displayPokemon;
+      if (!d) return;
+      const learned = (d.moveset_by_level || [])
+        .filter(m => m.level <= this.nivel)
+        .sort((a, b) => b.level - a.level)
+        .slice(0, 6);
+
+      const byName = new Map(Alpine.store('api').moves.map(m => [m.name.toLowerCase(), m]));
+      this.moves = learned.map(entry => {
+        const slot = makeMoveSearchSlot();
+        const move = byName.get(entry.move.toLowerCase());
+        if (move) slot.select(move);
+        return slot;
+      });
+      while (this.moves.length < 6) this.moves.push(makeMoveSearchSlot());
+    },
 
     onSpeciesSelect(p) {
       this.species.select(p);
@@ -83,6 +105,7 @@ document.addEventListener('alpine:init', () => {
       return t.join(' ').toLowerCase();
     },
     get expMax() { return ST_EXP_TABLE[+this.nivel] || 0; },
+    get previewHtml() { return stRenderPokeCard(this); },
 
     gerar() {
       if (!this.species.selected) { alert('Selecione um Pokémon.'); return; }
@@ -98,6 +121,7 @@ document.addEventListener('alpine:init', () => {
           let name = stFormatName(s.selected.name);
           if (s.tag === 'tm') name += ' (TM)';
           if (s.tag === 'em') name += ' (EM)';
+          if (s.tag === 'es') name += ' (ES)';
           const t = (s.selected.type || '').toLowerCase();
           return `[move${t ? ` t="${t}"` : ''}]${name}[/move]`;
         });
@@ -115,6 +139,9 @@ document.addEventListener('alpine:init', () => {
         ? `${stFormatName(this.species.selected.name)} / ${this.apelido}`
         : stFormatName(d.name);
 
+      const ct = this.concurso;
+      const concursoTag = `[concurso irado="${ct.cool || 0}" belo="${ct.beautiful || 0}" fofo="${ct.cute || 0}" sagaz="${ct.clever || 0}" forte="${ct.tough || 0}"]`;
+
       this.code = [
         `[spoiler="${spoilerLabel}"]`,
         `[poke nick="${nick}" especie="${stFormatName(d.name)}" art="${d.artwork || ''}"`,
@@ -124,6 +151,7 @@ document.addEventListener('alpine:init', () => {
         `\n${this.particularidades}`,
         `\n${moveTags.join('\n')}`,
         `\n[stats ${sa}]`,
+        `\n${concursoTag}`,
         `\n[/poke][/spoiler]`,
       ].join('');
     },
