@@ -63,6 +63,27 @@
     .st-move-tag { padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: var(--dark2); color: var(--white2); font-size: 10px; cursor: pointer; font-family: var(--font1); transition: all 0.12s; }
     .st-move-tag.active { background: var(--accent1); border-color: var(--accent1); color: var(--white); }
 
+    /* ── Cabeçalho de seção com ação (ex.: Movimentos + Carregar Últimos) ── */
+    .st-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .st-section-head h2 { margin: 0; }
+
+    /* ── Preview do card de Pokémon ── */
+    .st-preview-frame { background: var(--dark1); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 10px; overflow: auto; margin-top: 12px; }
+    .st-preview-empty { color: var(--white2); font-size: 12px; text-align: center; padding: 20px; margin: 0; }
+    .st-preview-type { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; background: var(--dark2); font-size: 11px; margin-left: 4px; }
+    .st-preview-type img { width: 14px; height: 14px; }
+    .tabpokemoves .move .move-src { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; opacity: .85; z-index: 2; }
+    .tabpokecontest { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+    .tabpokecontest .tabpokestat { flex: 1; min-width: 60px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--cell-bg); border-radius: 8px; padding: 8px 4px; }
+    .tabpokecontest .tabpokestat i { font-size: 18px; }
+    .tabpokecontest .ct-cool i   { color: #ff9d54; }
+    .tabpokecontest .ct-beauty i { color: #4e92d2; }
+    .tabpokecontest .ct-cute i   { color: #ed91e3; }
+    .tabpokecontest .ct-smart i  { color: #fb717b; }
+    .tabpokecontest .ct-tough i  { color: #c6b88a; }
+    .tabpokecontest .tabpokestatname { color: var(--white); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    .tabpokecontest .tabpokestatvalue { color: var(--groups); font-weight: 800; font-size: 16px; }
+
     /* ── Itens da mochila ── */
     .st-bag-items { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
     .st-bag-item { background: var(--cell-bg); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
@@ -541,7 +562,12 @@
       </div>
 
       <div class="st-section">
-        <h2><i class="fas fa-fire"></i> Movimentos</h2>
+        <div class="st-section-head">
+          <h2><i class="fas fa-fire"></i> Movimentos</h2>
+          <button class="st-btn-sec" :disabled="!species.selected" @click="carregarUltimosMovimentos()">
+            <i class="fas fa-rotate"></i> Carregar Últimos Movimentos
+          </button>
+        </div>
         <div class="st-grid">
           <template x-for="(slot, idx) in moves" :key="idx">
             <div class="st-group">
@@ -558,6 +584,7 @@
                 <span class="st-move-tag" :class="{active:slot.tag==='normal'}" @click="slot.tag='normal'">Normal</span>
                 <span class="st-move-tag" :class="{active:slot.tag==='tm'}"     @click="slot.tag='tm'">TM</span>
                 <span class="st-move-tag" :class="{active:slot.tag==='em'}"     @click="slot.tag='em'">EM</span>
+                <span class="st-move-tag" :class="{active:slot.tag==='es'}"     @click="slot.tag='es'">Especial</span>
               </div>
             </div>
           </template>
@@ -577,12 +604,28 @@
       </div>
 
       <div class="st-section">
+        <h2><i class="fas fa-star"></i> Estilos de Concurso</h2>
+        <div class="st-grid-3">
+          <div class="st-group"><label><i class="fas fa-fire"></i> Irado</label><input type="number" x-model="concurso.cool" min="0"></div>
+          <div class="st-group"><label><i class="fas fa-gem"></i> Belo</label><input type="number" x-model="concurso.beautiful" min="0"></div>
+          <div class="st-group"><label><i class="fas fa-heart"></i> Fofo</label><input type="number" x-model="concurso.cute" min="0"></div>
+          <div class="st-group"><label><i class="fas fa-brain"></i> Sagaz</label><input type="number" x-model="concurso.clever" min="0"></div>
+          <div class="st-group"><label><i class="fas fa-dumbbell"></i> Forte</label><input type="number" x-model="concurso.tough" min="0"></div>
+        </div>
+      </div>
+
+      <div class="st-section">
         <h2><i class="fas fa-code"></i> Código Gerado</h2>
         <div class="st-btn-row">
           <button @click="gerar()"><i class="fas fa-wand-magic-sparkles"></i> Gerar Código</button>
           <button class="st-btn-sec" @click="copy()" x-text="copied ? '✓ Copiado!' : 'Copiar'"></button>
+          <button class="st-btn-sec" @click="preview.toggle()">
+            <i class="fas fa-eye"></i>
+            <span x-text="preview.open ? 'Ocultar Preview' : 'Pré-visualizar'"></span>
+          </button>
         </div>
         <textarea class="st-code" x-model="code" readonly placeholder="O código aparecerá aqui..."></textarea>
+        <div class="st-preview-frame" x-show="preview.open" x-html="previewHtml"></div>
       </div>
     </div>
 
@@ -996,12 +1039,14 @@
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/utils/format.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/utils/exp.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/utils/clipboard.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/utils/poke-card-render.js"></script>
 
 <!-- Stores -->
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/stores/api.store.js"></script>
 
 <!-- Hooks -->
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/hooks/search-factories.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/hooks/preview-factories.js"></script>
 
 <!-- Tools -->
 <script src="https://cdn.jsdelivr.net/gh/gbavn/seira-tools@latest/js/tools/nav.js"></script>
